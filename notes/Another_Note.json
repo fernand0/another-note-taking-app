@@ -1,0 +1,10 @@
+{
+  "title": "Another Note",
+  "content": "This is another note that references the first one.",
+  "tags": [],
+  "references": [
+    "My First Note"
+  ],
+  "created_at": "2026-02-13T09:54:50.484943",
+  "updated_at": "2026-02-13T09:54:50.484947"
+}

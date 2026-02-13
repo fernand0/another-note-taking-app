@@ -1,0 +1,13 @@
+{
+  "title": "My First Note",
+  "content": "This is my first note. It contains a link: https://www.python.org",
+  "tags": [
+    "python"
+  ],
+  "references": [
+    "5"
+  ],
+  "urls": [],
+  "created_at": "2026-02-13T09:54:44.282905",
+  "updated_at": "2026-02-13T09:54:44.282910"
+}
