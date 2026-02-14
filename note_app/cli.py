@@ -2,14 +2,9 @@ import argparse
 import sys
 import os
 import subprocess
-try:
-    from .note import Note
-    from .storage import StorageManager
-    from .config import Config
-except ImportError:
-    from note import Note  # For testing purposes
-    from storage import StorageManager  # For testing purposes
-    from config import Config  # For testing purposes
+from .note import Note
+from .storage import StorageManager
+from .config import Config
 
 
 class NoteAppCLI:
@@ -400,10 +395,7 @@ class NoteAppCLI:
             return
             
         # We need to use the manager to get back references
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         back_refs = manager.get_back_references(resolved_title)
@@ -417,10 +409,7 @@ class NoteAppCLI:
     def handle_universal_search(self, args):
         """Handle the universal search command (searches all fields)."""
         # We need to use the manager to perform searches
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         if not args.query:
@@ -442,10 +431,7 @@ class NoteAppCLI:
 
     def handle_add_url(self, args):
         """Handle the add-url command."""
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         # Resolve the title from either text or number
@@ -468,10 +454,7 @@ class NoteAppCLI:
             
     def handle_remove_url(self, args):
         """Handle the remove-url command."""
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         # Resolve the title from either text or number
@@ -494,10 +477,7 @@ class NoteAppCLI:
             
     def handle_show_urls(self, args):
         """Handle the show-urls command."""
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         # Resolve the title from either text or number
@@ -522,10 +502,7 @@ class NoteAppCLI:
     def handle_field_search(self, args):
         """Handle the field-specific search command."""
         # We need to use the manager to perform searches
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         if args.search_type == 'content':
@@ -553,10 +530,7 @@ class NoteAppCLI:
     def handle_advanced_search(self, args):
         """Handle the advanced-search command."""
         # We need to use the manager to perform searches
-        try:
-            from .manager import NoteManager
-        except ImportError:
-            from manager import NoteManager  # For testing purposes
+        from .manager import NoteManager
         manager = NoteManager(self.storage_manager.storage_dir)
         
         results = manager.advanced_search(

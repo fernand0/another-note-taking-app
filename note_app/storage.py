@@ -3,10 +3,7 @@ import os
 import subprocess
 import hashlib
 from typing import Dict, List, Optional
-try:
-    from .note import Note
-except ImportError:
-    from note import Note  # For testing purposes
+from .note import Note
 
 
 class StorageManager:

@@ -25,7 +25,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-note-taker = "main:main"
+note-taker = "note_app.main:main"
 
 [tool.setuptools]
-py-modules = ["main", "cli", "note", "storage", "manager", "search", "config"]
+packages = ["note_app"]

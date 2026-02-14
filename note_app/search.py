@@ -1,11 +1,7 @@
 import re
 from typing import List
-try:
-    from .note import Note
-    from .storage import StorageManager
-except ImportError:
-    from note import Note  # For testing purposes
-    from storage import StorageManager  # For testing purposes
+from .note import Note
+from .storage import StorageManager
 
 
 class SearchEngine:

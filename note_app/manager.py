@@ -1,14 +1,7 @@
-try:
-    from .note import Note
-    from .storage import StorageManager
-    from .cli import NoteAppCLI
-    from .search import SearchEngine
-except ImportError:
-    from note import Note  # For testing purposes
-    from storage import StorageManager  # For testing purposes
-    from cli import NoteAppCLI  # For testing purposes
-    from search import SearchEngine  # For testing purposes
-
+from datetime import datetime
+from .note import Note
+from .storage import StorageManager
+from .search import SearchEngine
 
 class NoteManager:
     """
