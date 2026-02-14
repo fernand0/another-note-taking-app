@@ -1,158 +1,116 @@
 # Note-Taking Application
 
-A text-based note-taking application with CLI interface that supports links, short texts, and references to other notes.
+A text-based note-taking application with a CLI interface that supports links, tagging, note-to-note references, and automatic Git versioning.
 
 ## Features
 
-- Create, read, update, and delete notes
-- Add tags to notes
-- Reference other notes within a note
-- Find notes that reference a particular note (back-references)
-- Dedicated URL management:
-  - Add URLs to notes
-  - Remove URLs from notes
-  - Show all URLs in a note
-- Extract links from note content
-- Number-based note referencing: Use note numbers from the list/search commands instead of full titles
-- Search functionality:
-  - Universal search (across all fields)
-  - Search by content
-  - Search by title
-  - Search by tag
-  - Search by link
-  - Advanced search with multiple criteria
-- Store all data in text files using JSON format
+- **Full CRUD Support**: Create, read, update, and delete notes.
+- **Organization**: Add tags and specify the **origin** (source) of your notes.
+- **Interconnectivity**: Reference other notes and track **back-references** automatically.
+- **Git Integration**: Automatically commit changes (add, update, delete) if your storage directory is a Git repository.
+- **Configurable Storage**: Store your notes in any directory on your system.
+- **Smart Referencing**: Use note numbers from `list` or `search` results instead of typing full titles.
+- **Advanced Search**:
+  - Universal search across all fields (title, content, tags, links, origin).
+  - Field-specific search (title, content, tag, or link).
+  - Multi-criteria advanced search.
+- **Clean Storage**: Uses a human-readable JSON format, omitting empty fields for a clean data structure.
+- **Robustness**: Automatically handles long note titles by truncating filenames while preserving the full title in the content.
 
 ## Installation
+
+Install in editable mode:
 
 ```bash
 pip install -e .
 ```
 
-Or run directly:
+The `note-taker` command will then be available globally or within your virtual environment.
 
+## Configuration
+
+The application stores its configuration in `~/.note_taker_config.json`.
+
+### View or set storage directory
 ```bash
-python -m note_app.main
+# View current config
+note-taker config
+
+# Change storage directory
+note-taker config --storage-dir /path/to/your/notes
 ```
+
+### Enable Git Integration
+To enable automatic commits, initialize a Git repository in your storage directory:
+```bash
+note-taker init-git
+```
+From then on, every creation, modification, or deletion will trigger an automatic Git commit.
 
 ## Usage
 
-### Create a note
+### Basic Operations
 ```bash
-note-taker create "My Note Title" --content "This is the content of my note." --tags tag1 tag2
-```
+# Create a note with tags and origin
+note-taker create "My Note" --content "Note content..." --tags tag1 --origin "Telegram"
 
-### Read a note
-```bash
-note-taker read "My Note Title"
-```
+# Read a note (shows only populated fields)
+note-taker read "My Note"
 
-### Update a note
-```bash
-note-taker update "My Note Title" --content "Updated content here."
-note-taker update "My Note Title" --add-tag newtag
-note-taker update "My Note Title" --remove-tag oldtag
-```
+# Update content or metadata
+note-taker update "My Note" --content "New content" --origin "Web" --add-tag newtag
 
-### Delete a note
-```bash
-note-taker delete "My Note Title"
-```
+# Delete a note
+note-taker delete "My Note"
 
-### List all notes
-```bash
+# List all notes with indices
 note-taker list
 ```
 
-### Add a reference to another note
+### Referencing and Links
 ```bash
-note-taker add-ref "Current Note" "Referenced Note"
+# Add/remove references between notes
+note-taker add-ref "Note A" "Note B"
+note-taker remove-ref "Note A" "Note B"
+
+# Show references or back-references
+note-taker show-refs "Note A"
+note-taker show-back-refs "Note B"
+
+# Dedicated URL management
+note-taker add-url "Note A" "https://example.com"
+note-taker show-urls "Note A"
 ```
 
-### Remove a reference
+### Search
 ```bash
-note-taker remove-ref "Current Note" "Referenced Note"
-```
-
-### Show references in a note
-```bash
-note-taker show-refs "My Note Title"
-```
-
-### Show back-references (notes that reference this note)
-```bash
-note-taker show-back-refs "My Note Title"
-```
-
-### Manage URLs in notes
-```bash
-# Add a URL to a note
-note-taker add-url "Note Title" "https://example.com"
-
-# Remove a URL from a note
-note-taker remove-url "Note Title" "https://example.com"
-
-# Show all URLs in a note
-note-taker show-urls "Note Title"
-```
-
-### Search for notes
-```bash
-# Universal search (searches across all fields: content, title, tags, links, and dedicated URLs)
-note-taker search "search term"
+# Universal search (searches all fields)
+note-taker search "query"
 
 # Field-specific search
-# Search by content
-note-taker field-search content "search term"
+note-taker field-search content "python"
+note-taker field-search tag "important"
 
-# Search by title
-note-taker field-search title "search term"
-
-# Search by tag
-note-taker field-search tag "tag_name"
-
-# Search by link
-note-taker field-search link "https://example.com"
-
-# Advanced search with multiple criteria
-note-taker advanced-search --content "content" --title "title" --tag "tag" --link "https://example.com"
+# Advanced search
+note-taker advanced-search --title "Project" --tag "work"
 ```
 
-### Number-based note referencing
+### Number-based Referencing
+After running `list` or `search`, you can use the displayed numbers instead of titles:
 ```bash
-# List notes with numbers
 note-taker list
+# 1. My First Note
+# 2. Project Ideas
 
-# Read a note using its number (shown in the list)
 note-taker read 1
-
-# Update a note using its number
-note-taker update 1 --content "New content"
-
-# Delete a note using its number
-note-taker delete 2
-
-# Add a reference from one note to another using numbers
-note-taker add-ref 1 2
-
-# Show references in a note using its number
-note-taker show-refs 1
-
-# Show back-references to a note using its number
-note-taker show-back-refs 1
-
-# Show URLs in a note using its number
-note-taker show-urls 1
+note-taker update 2 --add-tag urgent
 ```
-
-## Data Storage
-
-All notes are stored in the `notes/` directory as JSON files. Each note is saved as a separate file named after its title (with invalid characters replaced).
 
 ## Architecture
 
-- `note.py`: Defines the Note class
-- `storage.py`: Handles file-based storage of notes
-- `manager.py`: High-level operations combining note and storage functionality
-- `cli.py`: Command-line interface
-- `main.py`: Entry point for the application
+- `note.py`: Defines the `Note` class and serialization logic.
+- `storage.py`: Handles file-based storage with Git integration and filename sanitization.
+- `manager.py`: Orchestrates notes, storage, and search operations.
+- `config.py`: Manages application settings.
+- `cli.py`: Implements the command-line interface and command handlers.
+- `main.py`: Entry point for the application.
