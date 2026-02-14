@@ -89,6 +89,21 @@ class NoteTaker(BotPlugin):
             response += f"{i}. {title}\n"
         return response
 
+    @arg_botcmd('title_or_num', type=str)
+    def note_delete(self, msg, title_or_num=None):
+        """Delete a note by title or number."""
+        resolved_title = self._resolve_title(title_or_num)
+        
+        # Verify it exists first
+        if not self.note_manager.read_note(resolved_title):
+            return f"Note '{resolved_title}' not found."
+            
+        success = self.note_manager.delete_note(resolved_title)
+        if success:
+            return f"Note '{resolved_title}' deleted successfully."
+        else:
+            return f"Failed to delete note '{resolved_title}'."
+
     def _resolve_title(self, input_str):
         """Helper to resolve a title from either a string or a list index."""
         try:
