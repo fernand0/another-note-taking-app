@@ -1,11 +1,15 @@
 import argparse
 import sys
+import os
+import subprocess
 try:
     from .note import Note
     from .storage import StorageManager
+    from .config import Config
 except ImportError:
     from note import Note  # For testing purposes
     from storage import StorageManager  # For testing purposes
+    from config import Config  # For testing purposes
 
 
 class NoteAppCLI:
@@ -13,7 +17,10 @@ class NoteAppCLI:
     Command Line Interface for the note-taking application.
     """
     
-    def __init__(self, storage_dir: str = "notes"):
+    def __init__(self, storage_dir: str = None):
+        self.config = Config()
+        if storage_dir is None:
+            storage_dir = self.config.storage_dir
         self.storage_manager = StorageManager(storage_dir)
         
     def resolve_note_title(self, title_or_number: str) -> str:
@@ -125,7 +132,7 @@ class NoteAppCLI:
         search_tag_parser.add_argument('tag', help='Tag to search for')
         
         # Search by link
-        search_link_parser = subparsers.add_parser('link', help='Search notes by link')
+        search_link_parser = search_subparsers.add_parser('link', help='Search notes by link')
         search_link_parser.add_argument('link', help='Link to search for')
         
         # Advanced search
@@ -136,6 +143,13 @@ class NoteAppCLI:
         advanced_search_parser.add_argument('--title', help='Search term for titles')
         advanced_search_parser.add_argument('--tag', help='Search term for tags')
         advanced_search_parser.add_argument('--link', help='Search term for links')
+
+        # Config command
+        config_parser = subparsers.add_parser('config', help='View or update configuration')
+        config_parser.add_argument('--storage-dir', help='Update the storage directory')
+
+        # Init Git command
+        init_git_parser = subparsers.add_parser('init-git', help='Initialize a git repository in the storage directory')
         
         args = parser.parse_args()
         
@@ -169,6 +183,10 @@ class NoteAppCLI:
             self.handle_field_search(args)
         elif args.command == 'advanced-search':
             self.handle_advanced_search(args)
+        elif args.command == 'config':
+            self.handle_config(args)
+        elif args.command == 'init-git':
+            self.handle_init_git(args)
         else:
             parser.print_help()
             
@@ -275,11 +293,11 @@ class NoteAppCLI:
         """Handle the list command."""
         notes = self.storage_manager.list_notes()
         if notes:
-            print(f"Found {len(notes)} note(s):")
+            print(f"Found {len(notes)} note(s) in {self.storage_manager.storage_dir}:")
             for i, title in enumerate(notes, 1):
                 print(f"{i}. {title}")
         else:
-            print("No notes found.")
+            print(f"No notes found in {self.storage_manager.storage_dir}.")
             
     def handle_add_ref(self, args):
         """Handle the add-ref command."""
@@ -534,3 +552,25 @@ class NoteAppCLI:
                 print(f"{i}. {title}")
         else:
             print("No notes found matching your search.")
+
+    def handle_config(self, args):
+        """Handle the config command."""
+        if args.storage_dir:
+            self.config.storage_dir = os.path.abspath(args.storage_dir)
+            print(f"Storage directory updated to: {self.config.storage_dir}")
+        else:
+            print(f"Current storage directory: {self.config.storage_dir}")
+            print(f"Config file: {self.config.config_path}")
+
+    def handle_init_git(self, args):
+        """Handle the init-git command."""
+        storage_dir = self.storage_manager.storage_dir
+        if os.path.exists(os.path.join(storage_dir, ".git")):
+            print(f"Git repository already exists in {storage_dir}")
+            return
+
+        try:
+            subprocess.run(["git", "init"], cwd=storage_dir, check=True)
+            print(f"Initialized empty Git repository in {storage_dir}")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"Failed to initialize Git repository: {e}")
