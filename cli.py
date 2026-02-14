@@ -231,7 +231,9 @@ class NoteAppCLI:
             except ValueError:
                 print(f"\nTitle: {note.title}")
                 
-            print(f"Origin: {note.origin if note.origin else 'Not specified'}")
+            if note.origin:
+                print(f"Origin: {note.origin}")
+                
             print(f"Created: {note.created_at}")
             print(f"Updated: {note.updated_at}")
             print(f"Tags: {', '.join(note.tags) if note.tags else 'None'}")
