@@ -1,9 +1,0 @@
-[Core]
-Name = NoteTaker
-Module = note_taker
-
-[Documentation]
-Description = A plugin to manage your notes via Errbot.
-
-[Python]
-Version = 3
