@@ -28,4 +28,4 @@ dependencies = []
 note-taker = "main:main"
 
 [tool.setuptools]
-packages = {find = {where = ["."]}}
+py-modules = ["main", "cli", "note", "storage", "manager", "search", "config"]

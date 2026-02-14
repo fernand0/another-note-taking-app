@@ -50,6 +50,7 @@ class NoteAppCLI:
         create_parser.add_argument('title', help='Title of the note')
         create_parser.add_argument('--content', '-c', help='Content of the note')
         create_parser.add_argument('--tags', '-t', nargs='*', help='Tags for the note')
+        create_parser.add_argument('--origin', help='Origin/source of the note')
         
         # Read command
         read_parser = subparsers.add_parser('read', help='Read a note')
@@ -61,6 +62,7 @@ class NoteAppCLI:
         update_parser.add_argument('--content', '-c', help='New content for the note')
         update_parser.add_argument('--add-tag', action='append', help='Add a tag to the note')
         update_parser.add_argument('--remove-tag', action='append', help='Remove a tag from the note')
+        update_parser.add_argument('--origin', help='Update the origin/source of the note')
         
         # Delete command
         delete_parser = subparsers.add_parser('delete', help='Delete a note')
@@ -132,7 +134,7 @@ class NoteAppCLI:
         search_tag_parser.add_argument('tag', help='Tag to search for')
         
         # Search by link
-        search_link_parser = search_subparsers.add_parser('link', help='Search notes by link')
+        search_link_parser = subparsers.add_parser('link', help='Search notes by link')
         search_link_parser.add_argument('link', help='Link to search for')
         
         # Advanced search
@@ -198,7 +200,7 @@ class NoteAppCLI:
             print(f"Note '{args.title}' already exists. Use 'update' to modify it.")
             return
             
-        note = Note(title=args.title, content=args.content or "")
+        note = Note(title=args.title, content=args.content or "", origin=args.origin or "")
         
         # Add tags if provided
         if args.tags:
@@ -229,6 +231,7 @@ class NoteAppCLI:
             except ValueError:
                 print(f"\nTitle: {note.title}")
                 
+            print(f"Origin: {note.origin if note.origin else 'Not specified'}")
             print(f"Created: {note.created_at}")
             print(f"Updated: {note.updated_at}")
             print(f"Tags: {', '.join(note.tags) if note.tags else 'None'}")
@@ -258,6 +261,12 @@ class NoteAppCLI:
         # Update content if provided
         if args.content is not None:
             note.update_content(args.content)
+
+        # Update origin if provided
+        if args.origin is not None:
+            note.origin = args.origin
+            from datetime import datetime
+            note.updated_at = datetime.now()
 
         # Add tags if provided
         if args.add_tag:

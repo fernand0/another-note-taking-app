@@ -18,14 +18,14 @@ class NoteManager:
     def __init__(self, storage_dir: str = "notes"):
         self.storage_manager = StorageManager(storage_dir)
         
-    def create_note(self, title: str, content: str = "", tags: list = None) -> bool:
+    def create_note(self, title: str, content: str = "", tags: list = None, origin: str = "") -> bool:
         """Create a new note."""
         # Check if note already exists
         existing_note = self.storage_manager.load_note(title)
         if existing_note:
             return False  # Note already exists
             
-        note = Note(title=title, content=content, tags=tags or [])
+        note = Note(title=title, content=content, tags=tags or [], origin=origin)
         return self.storage_manager.save_note(note)
         
     def read_note(self, title: str) -> Note:
@@ -33,7 +33,7 @@ class NoteManager:
         return self.storage_manager.load_note(title)
         
     def update_note(self, title: str, content: str = None, tags: list = None, 
-                    add_tags: list = None, remove_tags: list = None) -> bool:
+                    add_tags: list = None, remove_tags: list = None, origin: str = None) -> bool:
         """Update an existing note."""
         note = self.storage_manager.load_note(title)
         if not note:
@@ -43,6 +43,11 @@ class NoteManager:
         if content is not None:
             note.update_content(content)
             
+        # Update origin if provided
+        if origin is not None:
+            note.origin = origin
+            note.updated_at = datetime.now()
+
         # Replace tags if provided
         if tags is not None:
             note.tags = tags

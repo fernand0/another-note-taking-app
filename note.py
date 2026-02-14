@@ -9,12 +9,14 @@ class Note:
     """
     
     def __init__(self, title: str, content: str = "", tags: List[str] = None, 
-                 references: List[str] = None, urls: List[str] = None, created_at: datetime = None):
+                 references: List[str] = None, urls: List[str] = None, 
+                 origin: str = "", created_at: datetime = None):
         self.title = title
         self.content = content
         self.tags = tags or []
         self.references = references or []  # For referencing other notes
         self.urls = urls or []  # For dedicated URLs
+        self.origin = origin  # Source or origin of the note
         self.created_at = created_at or datetime.now()
         self.updated_at = datetime.now()
         
@@ -73,6 +75,7 @@ class Note:
             'tags': self.tags,
             'references': self.references,
             'urls': self.urls,
+            'origin': self.origin,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
@@ -85,7 +88,8 @@ class Note:
             content=data.get('content', ''),
             tags=data.get('tags', []),
             references=data.get('references', []),
-            urls=data.get('urls', [])
+            urls=data.get('urls', []),
+            origin=data.get('origin', '')
         )
         note.created_at = datetime.fromisoformat(data['created_at'])
         note.updated_at = datetime.fromisoformat(data['updated_at'])
