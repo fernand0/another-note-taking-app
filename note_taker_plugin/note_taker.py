@@ -1,15 +1,6 @@
 from errbot import BotPlugin, botcmd, arg_botcmd
-import os
-import sys
-
-try:
-    from note_app.manager import NoteManager
-    from note_app.config import Config
-except ImportError:
-    # If the package is not installed, we can try to find it relative to the plugin
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from note_app.manager import NoteManager
-    from note_app.config import Config
+from note_app.manager import NoteManager
+from note_app.config import Config
 
 class NoteTaker(BotPlugin):
     """
