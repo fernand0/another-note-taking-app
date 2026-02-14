@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import hashlib
 from typing import Dict, List, Optional
 try:
     from .note import Note
@@ -126,7 +127,7 @@ class StorageManager:
             
     def list_notes(self) -> List[str]:
         """
-        List all note titles in the storage directory.
+        List all note titles by reading them from the stored JSON files.
         
         Returns:
             A list of note titles
@@ -135,11 +136,16 @@ class StorageManager:
             notes = []
             for filename in os.listdir(self.storage_dir):
                 if filename.endswith('.json'):
-                    # Remove the '.json' extension to get the title
-                    title = filename[:-5]
-                    # Unsanitize the title
-                    title = self.unsanitize_filename(title)
-                    notes.append(title)
+                    filepath = os.path.join(self.storage_dir, filename)
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if 'title' in data:
+                                notes.append(data['title'])
+                            else:
+                                notes.append(self.unsanitize_filename(filename[:-5]))
+                    except (json.JSONDecodeError, IOError):
+                        notes.append(self.unsanitize_filename(filename[:-5]))
             return notes
         except Exception as e:
             print(f"Error listing notes: {e}")
@@ -147,7 +153,7 @@ class StorageManager:
             
     def sanitize_filename(self, title: str) -> str:
         """
-        Sanitize a note title to make it a valid filename.
+        Sanitize a note title to make it a valid filename, with truncation for long titles.
         
         Args:
             title: The original title
@@ -162,6 +168,13 @@ class StorageManager:
             sanitized = sanitized.replace(char, '_')
         # Also replace spaces with underscores for consistency
         sanitized = sanitized.replace(' ', '_')
+        
+        # Truncate to a safe length (e.g., 200 chars) to avoid OS errors
+        # If we truncate, we add a hash of the original title to ensure uniqueness
+        if len(sanitized) > 200:
+            title_hash = hashlib.md5(title.encode()).hexdigest()[:8]
+            sanitized = sanitized[:190] + "_" + title_hash
+            
         return sanitized
         
     def unsanitize_filename(self, filename: str) -> str:

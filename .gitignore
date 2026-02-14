@@ -30,9 +30,3 @@ wheels/
 # OS
 .DS_Store
 Thumbs.db
-
-# Notes directory - keep it but ignore system files
-notes/
-!.gitkeep
-notes/*/
-!*.json
