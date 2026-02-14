@@ -134,7 +134,7 @@ class NoteAppCLI:
         search_tag_parser.add_argument('tag', help='Tag to search for')
         
         # Search by link
-        search_link_parser = subparsers.add_parser('link', help='Search notes by link')
+        search_link_parser = search_subparsers.add_parser('link', help='Search notes by link')
         search_link_parser.add_argument('link', help='Link to search for')
         
         # Advanced search
@@ -236,10 +236,19 @@ class NoteAppCLI:
                 
             print(f"Created: {note.created_at}")
             print(f"Updated: {note.updated_at}")
-            print(f"Tags: {', '.join(note.tags) if note.tags else 'None'}")
-            print(f"References: {', '.join(note.references) if note.references else 'None'}")
-            print(f"Dedicated URLs: {', '.join(note.get_urls()) if note.get_urls() else 'None'}")
-            print(f"Content-extracted links: {', '.join(note.get_links()) if note.get_links() else 'None'}")
+            
+            if note.tags:
+                print(f"Tags: {', '.join(note.tags)}")
+                
+            if note.references:
+                print(f"References: {', '.join(note.references)}")
+                
+            if note.get_urls():
+                print(f"Dedicated URLs: {', '.join(note.get_urls())}")
+                
+            if note.get_links():
+                print(f"Content-extracted links: {', '.join(note.get_links())}")
+                
             print("\nContent:")
             print("-" * 40)
             print(note.content)

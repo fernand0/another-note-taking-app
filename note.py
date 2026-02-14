@@ -72,12 +72,15 @@ class Note:
         data = {
             'title': self.title,
             'content': self.content,
-            'tags': self.tags,
-            'references': self.references,
-            'urls': self.urls,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+        if self.tags:
+            data['tags'] = self.tags
+        if self.references:
+            data['references'] = self.references
+        if self.urls:
+            data['urls'] = self.urls
         if self.origin:
             data['origin'] = self.origin
         return data
