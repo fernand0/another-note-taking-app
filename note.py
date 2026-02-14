@@ -69,16 +69,18 @@ class Note:
         
     def to_dict(self) -> dict:
         """Convert the note to a dictionary for serialization."""
-        return {
+        data = {
             'title': self.title,
             'content': self.content,
             'tags': self.tags,
             'references': self.references,
             'urls': self.urls,
-            'origin': self.origin,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+        if self.origin:
+            data['origin'] = self.origin
+        return data
         
     @classmethod
     def from_dict(cls, data: dict):
