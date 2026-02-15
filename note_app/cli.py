@@ -13,8 +13,8 @@ class NoteAppCLI:
     Command Line Interface for the note-taking application.
     """
     
-    def __init__(self, storage_dir: str = None):
-        self.config = Config()
+    def __init__(self, storage_dir: str = None, config_path: str = None):
+        self.config = Config(config_path=config_path)
         if storage_dir is None:
             storage_dir = self.config.storage_dir
         self.storage_manager = StorageManager(storage_dir)
@@ -39,6 +39,7 @@ class NoteAppCLI:
     def run(self):
         """Run the CLI application."""
         parser = argparse.ArgumentParser(description="Text-based note-taking application")
+        parser.add_argument('--config-file', help='Specify an alternative configuration file')
         subparsers = parser.add_subparsers(dest='command', help='Available commands')
         
         # Create command
@@ -146,6 +147,10 @@ class NoteAppCLI:
         config_parser = subparsers.add_parser('config', help='View or update configuration')
         config_parser.add_argument('--storage-dir', help='Update the storage directory')
 
+        # Init command
+        init_parser = subparsers.add_parser('init', help='Initialize the notes directory and set up git repository')
+        init_parser.add_argument('--storage-dir', help='Specify the directory for storing notes')
+
         # Init Git command
         init_git_parser = subparsers.add_parser('init-git', help='Initialize a git repository in the storage directory')
         
@@ -194,6 +199,8 @@ class NoteAppCLI:
             self.handle_advanced_search(args)
         elif args.command == 'config':
             self.handle_config(args)
+        elif args.command == 'init':
+            self.handle_init(args)
         elif args.command == 'init-git':
             self.handle_init_git(args)
         else:
@@ -605,6 +612,50 @@ class NoteAppCLI:
         else:
             print(f"Current storage directory: {self.config.storage_dir}")
             print(f"Config file: {self.config.config_path}")
+
+    def handle_init(self, args):
+        """Handle the init command."""
+        from pathlib import Path
+        
+        # Determine the storage directory to use
+        if args.storage_dir:
+            storage_dir = os.path.abspath(args.storage_dir)
+        else:
+            # Show default and ask for input interactively
+            default_dir = str(Path.home() / "notes")
+            user_input = input(f"Enter the directory for storing notes [default: {default_dir}]: ").strip()
+            
+            if user_input:
+                storage_dir = os.path.abspath(user_input)
+            else:
+                storage_dir = default_dir
+        
+        # Create the storage directory if it doesn't exist
+        os.makedirs(storage_dir, exist_ok=True)
+        print(f"Notes directory initialized at: {storage_dir}")
+        
+        # Update the config with the new storage directory
+        self.config.storage_dir = storage_dir
+        print(f"Configuration updated with storage directory: {storage_dir}")
+        
+        # Initialize git repository in the storage directory if it doesn't exist
+        if not os.path.exists(os.path.join(storage_dir, ".git")):
+            try:
+                subprocess.run(["git", "init"], cwd=storage_dir, check=True)
+                print(f"Initialized empty Git repository in {storage_dir}")
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                print(f"Failed to initialize Git repository: {e}")
+        else:
+            print(f"Git repository already exists in {storage_dir}")
+        
+        # Create a basic .gitignore file for the notes directory if it doesn't exist
+        gitignore_path = os.path.join(storage_dir, ".gitignore")
+        if not os.path.exists(gitignore_path):
+            with open(gitignore_path, "w") as f:
+                f.write("# Ignore temporary files\n*.tmp\n*.temp\n.DS_Store\nThumbs.db\n")
+            print(f"Created .gitignore file in {storage_dir}")
+        else:
+            print(f".gitignore file already exists in {storage_dir}")
 
     def handle_init_git(self, args):
         """Handle the init-git command."""

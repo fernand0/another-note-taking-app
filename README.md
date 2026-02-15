@@ -31,6 +31,15 @@ The `note-taker` command will then be available globally or within your virtual 
 
 The application stores its configuration in `~/.note_taker_config.json`.
 
+### Initialize the application
+```bash
+# Initialize the notes directory and set up git repository (prompts for directory)
+note-taker init
+
+# Initialize with a specific directory
+note-taker init --storage-dir /path/to/your/notes
+```
+
 ### View or set storage directory
 ```bash
 # View current config
@@ -38,6 +47,14 @@ note-taker config
 
 # Change storage directory
 note-taker config --storage-dir /path/to/your/notes
+```
+
+### Global config file option
+You can specify an alternative configuration file for any command:
+```bash
+# Use a custom config file
+note-taker --config-file /path/to/custom/config.json init
+note-taker --config-file /path/to/custom/config.json list
 ```
 
 ### Enable Git Integration

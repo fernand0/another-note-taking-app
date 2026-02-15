@@ -9,8 +9,12 @@ class Config:
     """
     Manages the application configuration.
     """
-    def __init__(self, config_path: Path = DEFAULT_CONFIG_PATH):
-        self.config_path = config_path
+    def __init__(self, config_path: str = None):
+        if config_path is None:
+            self.config_path = DEFAULT_CONFIG_PATH
+        else:
+            from pathlib import Path
+            self.config_path = Path(config_path).expanduser()
         self.data = self._load()
 
     def _load(self) -> dict:

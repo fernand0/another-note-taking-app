@@ -15,7 +15,18 @@ except ImportError:
     from .cli import NoteAppCLI
 
 def main():
-    app = NoteAppCLI()
+    import argparse
+    # Parse just the global options first
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--config-file', help='Specify an alternative configuration file')
+    # Parse known args to get the config file option
+    global_args, remaining_argv = parser.parse_known_args()
+    
+    # Pass the config file to the CLI
+    app = NoteAppCLI(config_path=global_args.config_file)
+    # Reconstruct sys.argv to exclude the global args for the main parser
+    import sys
+    sys.argv = [sys.argv[0]] + remaining_argv
     app.run()
 
 if __name__ == "__main__":
