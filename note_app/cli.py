@@ -59,6 +59,10 @@ class NoteAppCLI:
         # Read command
         read_parser = subparsers.add_parser('read', help='Read a note')
         read_parser.add_argument('title', help='Title of the note to read')
+
+        # Show command (alias for read)
+        show_parser = subparsers.add_parser('show', help='Read a note (alias for read)')
+        show_parser.add_argument('title', help='Title of the note to read')
         
         # Update command
         update_parser = subparsers.add_parser('update', help='Update a note')
@@ -176,7 +180,7 @@ class NoteAppCLI:
         
         if args.command == 'create' or args.command == 'add':
             self.handle_create(args)
-        elif args.command == 'read':
+        elif args.command == 'read' or args.command == 'show':
             self.handle_read(args)
         elif args.command == 'update':
             self.handle_update(args)

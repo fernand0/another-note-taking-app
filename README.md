@@ -77,6 +77,9 @@ note-taker add "My Note" --content "Note content..." --tags tag1 --origin "Teleg
 # Read a note (shows only populated fields)
 note-taker read "My Note"
 
+# Alternative 'show' command (alias for read)
+note-taker show "My Note"
+
 # Update content or metadata
 note-taker update "My Note" --content "New content" --origin "Web" --add-tag newtag
 
