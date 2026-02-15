@@ -132,7 +132,7 @@ class StorageManager:
             A list of note titles
         """
         try:
-            notes = []
+            notes_with_dates = []
             for filename in os.listdir(self.storage_dir):
                 if filename.endswith('.json'):
                     filepath = os.path.join(self.storage_dir, filename)
@@ -140,12 +140,23 @@ class StorageManager:
                         with open(filepath, 'r', encoding='utf-8') as f:
                             data = json.load(f)
                             if 'title' in data:
-                                notes.append(data['title'])
+                                title = data['title']
                             else:
-                                notes.append(self.unsanitize_filename(filename[:-5]))
+                                title = self.unsanitize_filename(filename[:-5])
+                            
+                            # Extract creation date for sorting
+                            created_at = data.get('created_at', '')
+                            notes_with_dates.append((title, created_at))
                     except (json.JSONDecodeError, IOError):
-                        notes.append(self.unsanitize_filename(filename[:-5]))
-            return notes
+                        title = self.unsanitize_filename(filename[:-5])
+                        notes_with_dates.append((title, ''))
+            
+            # Sort by creation date (ascending - oldest first)
+            # If no date is available, put those at the end
+            notes_with_dates.sort(key=lambda x: (x[1] == '', x[1]))
+            
+            # Return just the titles in sorted order
+            return [title for title, created_at in notes_with_dates]
         except Exception as e:
             print(f"Error listing notes: {e}")
             return []
