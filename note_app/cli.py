@@ -75,6 +75,10 @@ class NoteAppCLI:
         # Delete command
         delete_parser = subparsers.add_parser('delete', help='Delete a note')
         delete_parser.add_argument('title', help='Title of the note to delete')
+
+        # Del command (alias for delete)
+        del_parser = subparsers.add_parser('del', help='Delete a note (alias for delete)')
+        del_parser.add_argument('title', help='Title of the note to delete')
         
         # List command
         list_parser = subparsers.add_parser('list', help='List all notes')
@@ -184,7 +188,7 @@ class NoteAppCLI:
             self.handle_read(args)
         elif args.command == 'update':
             self.handle_update(args)
-        elif args.command == 'delete':
+        elif args.command == 'delete' or args.command == 'del':
             self.handle_delete(args)
         elif args.command == 'list':
             self.handle_list(args)

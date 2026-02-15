@@ -86,6 +86,9 @@ note-taker update "My Note" --content "New content" --origin "Web" --add-tag new
 # Delete a note
 note-taker delete "My Note"
 
+# Alternative 'del' command (alias for delete)
+note-taker del "My Note"
+
 # List all notes with indices
 note-taker list
 ```
