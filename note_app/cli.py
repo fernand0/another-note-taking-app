@@ -1,5 +1,6 @@
 import argparse
 import sys
+import datetime
 import os
 import subprocess
 from .note import Note
@@ -148,6 +149,17 @@ class NoteAppCLI:
         # Init Git command
         init_git_parser = subparsers.add_parser('init-git', help='Initialize a git repository in the storage directory')
         
+        # Get the list of known commands
+        known_commands = list(subparsers.choices.keys())
+        
+        # Check if the first argument (if it exists) is NOT a known command
+        # sys.argv[0] is the script name, sys.argv[1] is the first actual argument
+        if len(sys.argv) > 1 and sys.argv[1] not in known_commands:
+            # Assume the user is trying to create a default note
+            self.handle_default_create(sys.argv[1:])
+            return # Exit after handling default create
+
+        # If it IS a known command, or no arguments, proceed with normal parsing
         args = parser.parse_args()
         
         if args.command == 'create':
@@ -186,6 +198,44 @@ class NoteAppCLI:
             self.handle_init_git(args)
         else:
             parser.print_help()
+            
+    def handle_default_create(self, content_parts):
+        """
+        Handles the creation of a new note when no specific command is given,
+        using the unparsed arguments as content.
+        """
+        full_content = " ".join(content_parts)
+
+        if not full_content.strip():
+            print("No content provided to create a note.")
+            return
+
+        # Generate a title from the content
+        # Take the first 5 words or the entire content if shorter, then add timestamp for uniqueness
+        words = full_content.split()
+        if len(words) > 5:
+            base_title = " ".join(words[:5])
+        else:
+            base_title = full_content
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        # Ensure title doesn't exceed a reasonable length if content is very long
+        max_title_len = 100
+        if len(base_title) > max_title_len - len(timestamp) - 1: # -1 for underscore
+            base_title = base_title[:max_title_len - len(timestamp) - 1 - 3] + "..." # -3 for ellipsis
+        
+        title = f"{base_title}_{timestamp}"
+
+        # Create a dummy args object for handle_create
+        class DefaultCreateArgs:
+            def __init__(self, title, content):
+                self.title = title
+                self.content = content
+                self.tags = None
+                self.origin = None
+
+        default_args = DefaultCreateArgs(title=title, content=full_content)
+        self.handle_create(default_args)
             
     def handle_create(self, args):
         """Handle the create command."""
