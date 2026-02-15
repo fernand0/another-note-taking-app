@@ -168,6 +168,9 @@ class NoteAppCLI:
 
         # Init Git command
         init_git_parser = subparsers.add_parser('init-git', help='Initialize a git repository in the storage directory')
+
+        # Push command
+        push_parser = subparsers.add_parser('push', help='Push changes to the git remote repository')
         
         # Get the list of known commands
         known_commands = list(subparsers.choices.keys())
@@ -218,6 +221,8 @@ class NoteAppCLI:
             self.handle_init(args)
         elif args.command == 'init-git':
             self.handle_init_git(args)
+        elif args.command == 'push':
+            self.handle_push(args)
         else:
             parser.print_help()
             
@@ -671,6 +676,39 @@ class NoteAppCLI:
             print(f"Created .gitignore file in {storage_dir}")
         else:
             print(f".gitignore file already exists in {storage_dir}")
+
+    def handle_push(self, args):
+        """Handle the push command."""
+        storage_dir = self.storage_manager.storage_dir
+        if not self.storage_manager._is_git_repo():
+            print(f"No git repository found in {storage_dir}")
+            return
+
+        try:
+            # Check if there is a remote to push to
+            result = subprocess.run(["git", "remote", "get-url", "origin"], 
+                                  cwd=storage_dir, 
+                                  capture_output=True, 
+                                  text=True)
+            if result.returncode != 0:
+                print(f"No remote repository configured in {storage_dir}")
+                print("Use 'git remote add origin <repository-url>' to add a remote")
+                return
+            
+            # Perform the git push
+            result = subprocess.run(["git", "push"], 
+                                  cwd=storage_dir, 
+                                  capture_output=True, 
+                                  text=True)
+            
+            if result.returncode == 0:
+                print("Successfully pushed changes to remote repository")
+                if result.stdout.strip():
+                    print(result.stdout)
+            else:
+                print(f"Failed to push changes: {result.stderr}")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"Failed to push changes: {e}")
 
     def handle_init_git(self, args):
         """Handle the init-git command."""

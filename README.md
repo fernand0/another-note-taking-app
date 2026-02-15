@@ -64,6 +64,13 @@ note-taker init-git
 ```
 From then on, every creation, modification, or deletion will trigger an automatic Git commit.
 
+### Push to Remote Repository
+To push your changes to a remote Git repository:
+```bash
+note-taker push
+```
+This command will push all committed changes to the configured remote repository.
+
 ## Usage
 
 ### Basic Operations
