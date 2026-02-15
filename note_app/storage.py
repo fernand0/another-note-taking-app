@@ -60,7 +60,8 @@ class StorageManager:
                 json.dump(note.to_dict(), f, indent=2, ensure_ascii=False)
             
             if self._is_git_repo():
-                self._run_git_command(["add", filename])
+                # Use -- to separate options from filenames to prevent interpretation of filenames starting with dashes
+                self._run_git_command(["add", "--", filename])
                 self._run_git_command(["commit", "-m", f"Update note: {note.title}"])
                 
             return True
@@ -112,7 +113,8 @@ class StorageManager:
                 
                 if self._is_git_repo():
                     # We use git rm if it's a git repo to properly stage the deletion
-                    self._run_git_command(["rm", filename])
+                    # Use -- to separate options from filenames to prevent interpretation of filenames starting with dashes
+                    self._run_git_command(["rm", "--", filename])
                     self._run_git_command(["commit", "-m", f"Delete note: {title}"])
                 
                 return True

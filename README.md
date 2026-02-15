@@ -129,6 +129,26 @@ note-taker read 1
 note-taker update 2 --add-tag urgent
 ```
 
+### Handling Titles That Start With Dashes
+If your note title starts with dashes (like `--help`), it may be interpreted as a command option. To avoid this issue:
+
+1. Use numbered references (recommended):
+```bash
+note-taker list
+# 1. --help
+note-taker read 1  # Reads the note titled "--help"
+```
+
+2. Quote the title when creating/updating:
+```bash
+note-taker create "--my-option-note" --content "Content here"
+```
+
+3. Use the `--` separator to distinguish options from arguments:
+```bash
+note-taker create -- "--my-option-note" --content "Content here"
+```
+
 ## Architecture
 
 - `note.py`: Defines the `Note` class and serialization logic.
