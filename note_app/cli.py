@@ -48,6 +48,13 @@ class NoteAppCLI:
         create_parser.add_argument('--content', '-c', help='Content of the note')
         create_parser.add_argument('--tags', '-t', nargs='*', help='Tags for the note')
         create_parser.add_argument('--origin', help='Origin/source of the note')
+
+        # Add command (alias for create)
+        add_parser = subparsers.add_parser('add', help='Create a new note (alias for create)')
+        add_parser.add_argument('title', help='Title of the note')
+        add_parser.add_argument('--content', '-c', help='Content of the note')
+        add_parser.add_argument('--tags', '-t', nargs='*', help='Tags for the note')
+        add_parser.add_argument('--origin', help='Origin/source of the note')
         
         # Read command
         read_parser = subparsers.add_parser('read', help='Read a note')
@@ -167,7 +174,7 @@ class NoteAppCLI:
         # If it IS a known command, or no arguments, proceed with normal parsing
         args = parser.parse_args()
         
-        if args.command == 'create':
+        if args.command == 'create' or args.command == 'add':
             self.handle_create(args)
         elif args.command == 'read':
             self.handle_read(args)

@@ -71,6 +71,9 @@ From then on, every creation, modification, or deletion will trigger an automati
 # Create a note with tags and origin
 note-taker create "My Note" --content "Note content..." --tags tag1 --origin "Telegram"
 
+# Alternative 'add' command (alias for create)
+note-taker add "My Note" --content "Note content..." --tags tag1 --origin "Telegram"
+
 # Read a note (shows only populated fields)
 note-taker read "My Note"
 
