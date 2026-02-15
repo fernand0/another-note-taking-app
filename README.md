@@ -160,3 +160,7 @@ note-taker create -- "--my-option-note" --content "Content here"
 - `config.py`: Manages application settings.
 - `cli.py`: Implements the command-line interface and command handlers.
 - `main.py`: Entry point for the application.
+
+## Development
+
+This project has been vibe-coded using Qwen and Gemini free tiers, demonstrating the capabilities of AI-assisted development.
