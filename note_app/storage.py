@@ -110,10 +110,12 @@ class StorageManager:
             
             if os.path.exists(filepath):
                 if self._is_git_repo():
-                    # We use git rm if it's a git repo to properly stage the deletion
-                    # Use -- to separate options from filenames to prevent interpretation of filenames starting with dashes
-                    self._run_git_command(["rm", "--", filename])
-                    self._run_git_command(["commit", "-m", f"Delete note: {title}"])
+                    rm_successful = self._run_git_command(["rm", "--", filename])
+                    if rm_successful:
+                        self._run_git_command(["commit", "-m", f"Delete note: {title}"])
+                    else:
+                        # Fallback to os.remove if git rm failed (e.g., file not tracked)
+                        os.remove(filepath)
                 else:
                     os.remove(filepath)
                 
