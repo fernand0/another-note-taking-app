@@ -5,12 +5,9 @@ import subprocess
 from pathlib import Path
 import json
 
-# Add the current directory to the path so we can import modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from note import Note
-from storage import StorageManager
-from config import Config
+from note_app.note import Note
+from note_app.storage import StorageManager
+from note_app.config import Config
 
 def test_config_management():
     """Test configuration loading and saving."""

@@ -2,12 +2,9 @@ import os
 import sys
 import tempfile
 
-# Add the current directory to the path so we can import modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from note import Note
-from storage import StorageManager
-from manager import NoteManager
+from note_app.note import Note
+from note_app.storage import StorageManager
+from note_app.manager import NoteManager
 
 
 def test_universal_search():

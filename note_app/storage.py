@@ -109,13 +109,13 @@ class StorageManager:
             filepath = os.path.join(self.storage_dir, filename)
             
             if os.path.exists(filepath):
-                os.remove(filepath)
-                
                 if self._is_git_repo():
                     # We use git rm if it's a git repo to properly stage the deletion
                     # Use -- to separate options from filenames to prevent interpretation of filenames starting with dashes
                     self._run_git_command(["rm", "--", filename])
                     self._run_git_command(["commit", "-m", f"Delete note: {title}"])
+                else:
+                    os.remove(filepath)
                 
                 return True
             else:
