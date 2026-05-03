@@ -214,7 +214,75 @@ class NoteManager:
         search_engine = SearchEngine(self.storage_manager)
         return search_engine.advanced_search(content_query, title_query, tag_query, link_query)
 
-    def universal_search(self, query: str) -> list:
-        """Search across all fields: content, title, tags, and links."""
-        search_engine = SearchEngine(self.storage_manager)
-        return search_engine.universal_search(query)
+    def join_notes(self, title1: str, title2: str, new_title: str = None) -> any:
+        """
+        Join two notes into one.
+        Combines content, tags, references and URLs.
+        If a note's content is empty and its title is a URL, the URL is moved to the content.
+        """
+        note1 = self.read_note(title1)
+        note2 = self.read_note(title2)
+        
+        if not note1 or not note2:
+            return False
+            
+        # Keep track of original titles for deletion
+        orig_title1 = note1.title
+        orig_title2 = note2.title
+            
+        # Combine content
+        c1 = note1.content.strip()
+        c2 = note2.content.strip()
+        
+        # If title is a URL and content is empty, use title as content
+        if not c1 and note1.title.startswith('http'):
+            c1 = note1.title
+        if not c2 and note2.title.startswith('http'):
+            c2 = note2.title
+            
+        combined_content = f"{c1}\n\n{c2}".strip()
+        
+        # Combine tags (using set for uniqueness)
+        combined_tags = list(set(note1.tags + note2.tags))
+        
+        # Combine dedicated URLs
+        combined_urls = list(set(note1.urls + note2.urls))
+        
+        # Combine references
+        combined_refs = list(set(note1.references + note2.references))
+        
+        # Target title
+        target_title = new_title or orig_title1
+        
+        # If it's a new title, we need to make sure it doesn't collide unless it's one of the originals
+        if new_title and new_title not in [orig_title1, orig_title2]:
+            if self.storage_manager.load_note(new_title):
+                return False # Target already exists
+        
+        # Prepare the joined note
+        joined_note = Note(
+            title=target_title,
+            content=combined_content,
+            tags=combined_tags,
+            urls=combined_urls,
+            references=combined_refs,
+            origin=note1.origin or note2.origin
+        )
+        
+        # Save the joined note
+        if self.storage_manager.save_note(joined_note):
+            # If target_title is same as orig_title1, we already "overwrote" it in storage 
+            # (though in git it's an update). 
+            # If it's different, or it was title2, we might need to delete.
+            
+            # Delete title2 always (it's being merged)
+            if target_title != orig_title2:
+                self.storage_manager.delete_note(orig_title2)
+            
+            # Delete title1 if it's not the target_title
+            if target_title != orig_title1:
+                self.storage_manager.delete_note(orig_title1)
+                
+            return target_title
+            
+        return False

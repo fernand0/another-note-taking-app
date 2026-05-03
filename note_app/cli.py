@@ -156,6 +156,12 @@ class NoteAppCLI:
 
         # Push command
         push_parser = subparsers.add_parser('push', help='Push changes to the git remote repository')
+
+        # Join command
+        join_parser = subparsers.add_parser('join', help='Join two notes into one')
+        join_parser.add_argument('title1', help='Title or index of the first note')
+        join_parser.add_argument('title2', help='Title or index of the second note')
+        join_parser.add_argument('--title', '-t', help='New title for the joined note')
         
         # Get the list of known commands
         known_commands = list(subparsers.choices.keys())
@@ -208,6 +214,8 @@ class NoteAppCLI:
             self.handle_init_git(args)
         elif args.command == 'push':
             self.handle_push(args)
+        elif args.command == 'join':
+            self.handle_join(args)
         else:
             parser.print_help()
             
@@ -313,6 +321,14 @@ class NoteAppCLI:
                 print(f"{i}. {title}")
         else:
             print(f"No notes found in {self.storage_manager.storage_dir}.")
+            
+    def handle_join(self, args):
+        """Handle the join command."""
+        title = self.note_manager.join_notes(args.title1, args.title2, args.title)
+        if title:
+            print(f"Notes joined successfully into '{title}'.")
+        else:
+            print("Failed to join notes. Ensure both notes exist and the target title is not already taken.")
             
     def handle_add_ref(self, args):
         """Handle the add-ref command."""

@@ -192,6 +192,37 @@ def test_title_resolution():
         print("✓ Delete by index works")
 
 
+def test_join_notes():
+    """Test joining two notes."""
+    print("\nTesting join notes...")
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        manager = NoteManager(temp_dir)
+        
+        # Create two notes with URL titles and empty content
+        url1 = "https://example.com/1"
+        url2 = "https://example.com/2"
+        manager.create_note(title=url1, tags=["tag1"])
+        manager.create_note(title=url2, tags=["tag2"])
+        
+        # Join them
+        new_title = "Joined Note"
+        result_title = manager.join_notes(url1, url2, new_title)
+        
+        assert result_title == new_title
+        joined_note = manager.read_note(new_title)
+        assert joined_note is not None
+        assert url1 in joined_note.content
+        assert url2 in joined_note.content
+        assert "tag1" in joined_note.tags
+        assert "tag2" in joined_note.tags
+        
+        # Check originals are deleted
+        assert manager.read_note(url1) is None
+        assert manager.read_note(url2) is None
+        print("✓ Joining notes with URL titles and tags works")
+
+
 def run_tests():
     """Run all tests."""
     print("Running tests for note-taking application...\n")
@@ -202,6 +233,7 @@ def run_tests():
         test_hashtag_tags_extraction()
         test_note_creation_without_title()
         test_title_resolution()
+        test_join_notes()
         print("\n✓ All tests passed!")
     except AssertionError as e:
         print(f"\n✗ Test failed: {e}")
