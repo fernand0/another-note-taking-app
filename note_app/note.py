@@ -11,13 +11,18 @@ class Note:
     def __init__(self, title: str, content: str = "", tags: List[str] = None, 
                  references: List[str] = None, urls: List[str] = None, 
                  origin: str = "", created_at: datetime = None):
-        self.title = title
+        # Extract tags from title
+        processed_title, extracted_tags_title = self._extract_tags_from_content(title)
+        self.title = processed_title
         self.tags = tags or []
+        for tag in extracted_tags_title:
+            if tag not in self.tags:
+                self.tags.append(tag)
         
-        # Extract tags from content if they are at the end
-        processed_content, extracted_tags = self._extract_tags_from_content(content)
+        # Extract tags from content
+        processed_content, extracted_tags_content = self._extract_tags_from_content(content)
         self.content = processed_content
-        for tag in extracted_tags:
+        for tag in extracted_tags_content:
             if tag not in self.tags:
                 self.tags.append(tag)
 
@@ -27,34 +32,62 @@ class Note:
         self.created_at = created_at or datetime.now()
         self.updated_at = datetime.now()
 
-    def _extract_tags_from_content(self, content: str):
-        """Extract hashtag tags from the end of the content."""
-        if not content:
-            return content, []
+    def _extract_tags_from_content(self, text: str):
+        """Extract hashtag tags from the end of the text (multi-line supported)."""
+        if not text:
+            return text, []
             
-        lines = content.split('\n')
-        if not lines:
-            return content, []
+        # Strip trailing whitespace but remember it for later if we don't find tags
+        original_text = text
+        text = text.rstrip()
+        if not text:
+            return original_text, []
             
-        last_line = lines[-1]
-        words = last_line.split()
+        lines = text.split('\n')
+        all_extracted_tags = []
         
-        extracted_tags = []
-        # Work backwards from the end
-        while words and words[-1].startswith('#') and len(words[-1]) > 1:
-            tag = words.pop().lstrip('#')
-            if tag not in extracted_tags:
-                extracted_tags.append(tag)
+        # Process lines from bottom to top
+        new_lines = []
+        extracting = True
         
-        if extracted_tags:
-            # Reconstruct the last line without the extracted tags
-            new_last_line = " ".join(words)
-            lines[-1] = new_last_line
-            # Join lines back, rstrip to remove any trailing whitespace/newlines left from removal
-            new_content = "\n".join(lines).rstrip()
-            return new_content, list(reversed(extracted_tags))
+        for line in reversed(lines):
+            if not extracting:
+                new_lines.append(line)
+                continue
+                
+            words = line.split()
+            if not words:
+                # Empty line at the end, keep looking
+                new_lines.append(line)
+                continue
+                
+            line_extracted_tags = []
+            # Work backwards in the line
+            while words and words[-1].startswith('#') and len(words[-1]) > 1:
+                tag = words.pop().lstrip('#')
+                if tag not in all_extracted_tags:
+                    line_extracted_tags.append(tag)
             
-        return content, []
+            if line_extracted_tags:
+                all_extracted_tags.extend(reversed(line_extracted_tags))
+                new_line = " ".join(words)
+                if new_line:
+                    new_lines.append(new_line)
+                    # Once we hit a line that has content before the hashtags, we stop extracting
+                    extracting = False
+                else:
+                    # Line was only hashtags, continue to previous line
+                    pass
+            else:
+                # No hashtags at the end of this line, stop extracting
+                new_lines.append(line)
+                extracting = False
+        
+        if all_extracted_tags:
+            new_text = "\n".join(reversed(new_lines)).rstrip()
+            return new_text, all_extracted_tags
+            
+        return original_text, []
         
     def add_tag(self, tag: str):
         """Add a tag to the note."""

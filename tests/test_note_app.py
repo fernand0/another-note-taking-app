@@ -93,7 +93,7 @@ def test_note_manager():
 
 
 def test_hashtag_tags_extraction():
-    """Test extracting hashtag tags from the end of the note content."""
+    """Test extracting hashtag tags from the end of the note content and title."""
     print("\nTesting hashtag tags extraction...")
     
     # Test case: Multiple tags at the end
@@ -115,6 +115,25 @@ def test_hashtag_tags_extraction():
     assert note.content == "New content", "Content not stripped during update"
     print("✓ Hashtags extracted during update")
 
+    # Test case: Extraction from title
+    note3 = Note("Note Title #urgent", "Some content")
+    assert "urgent" in note3.tags, "Tag not extracted from title"
+    assert note3.title == "Note Title", f"Title not stripped correctly: {note3.title}"
+    print("✓ Hashtags extracted from title")
+
+    # Test case: Multi-line extraction
+    note4 = Note("Multi-line Test", "Content line 1\n#tag1\n#tag2")
+    assert "tag1" in note4.tags, "Multi-line tag1 not extracted"
+    assert "tag2" in note4.tags, "Multi-line tag2 not extracted"
+    assert note4.content == "Content line 1", f"Multi-line content not stripped correctly: {note4.content}"
+    print("✓ Multi-line hashtags extracted")
+
+    # Test case: Trailing spaces and newlines
+    note5 = Note("Trailing Test", "Content #tag1 \n \n")
+    assert "tag1" in note5.tags, "Tag with trailing spaces/newlines not extracted"
+    assert note5.content == "Content", f"Content with trailing spaces not stripped correctly: {note5.content}"
+    print("✓ Hashtags with trailing spaces/newlines extracted")
+
 
 def test_note_creation_without_title():
     """Test creating a note without an explicit title."""
@@ -131,8 +150,16 @@ def test_note_creation_without_title():
         
         # Verify it can be read
         note = manager.read_note(title)
-        assert note.content == content, "Content mismatch"
+        assert note.content == "This is a note without a title", "Content mismatch"
         print(f"✓ Note created with generated title: {title}")
+        
+        # Test case: Content with hashtags
+        content2 = "Short note #tag1 #tag2"
+        title2 = manager.create_note(content=content2)
+        assert "Short note_" in title2
+        assert "#tag1" not in title2
+        assert "tag1" in manager.read_note(title2).tags
+        print(f"✓ Note created with generated title without hashtags: {title2}")
 
 
 def test_title_resolution():

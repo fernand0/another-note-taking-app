@@ -13,17 +13,23 @@ class NoteManager:
         
     def create_note(self, title: str = None, content: str = "", tags: list = None, origin: str = "") -> any:
         """Create a new note. If title is not provided, it is generated from content."""
+        # Create Note object first to extract tags from content and title (if provided)
+        note = Note(title=title or "", content=content, tags=tags or [], origin=origin)
+
         if not title:
-            if not content:
-                return False
-                
-            # Generate a title from the content
-            # Take the first 5 words or the entire content if shorter, then add timestamp for uniqueness
-            words = content.split()
-            if len(words) > 5:
-                base_title = " ".join(words[:5])
+            if not note.content:
+                # If no title and no content after stripping tags, use first tag as title
+                if note.tags:
+                    base_title = note.tags[0]
+                else:
+                    return False
             else:
-                base_title = content
+                # Generate a title from the cleaned content
+                words = note.content.split()
+                if len(words) > 5:
+                    base_title = " ".join(words[:5])
+                else:
+                    base_title = note.content
 
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             # Ensure title doesn't exceed a reasonable length
@@ -31,16 +37,15 @@ class NoteManager:
             if len(base_title) > max_title_len - len(timestamp) - 1: # -1 for underscore
                 base_title = base_title[:max_title_len - len(timestamp) - 1 - 3] + "..." # -3 for ellipsis
             
-            title = f"{base_title}_{timestamp}"
+            note.title = f"{base_title}_{timestamp}"
 
         # Check if note already exists
-        existing_note = self.storage_manager.load_note(title)
+        existing_note = self.storage_manager.load_note(note.title)
         if existing_note:
             return False  # Note already exists
             
-        note = Note(title=title, content=content, tags=tags or [], origin=origin)
         if self.storage_manager.save_note(note):
-            return title
+            return note.title
         return False
         
     def resolve_title(self, title_or_number: str) -> str:
