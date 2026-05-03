@@ -286,3 +286,8 @@ class NoteManager:
             return target_title
             
         return False
+
+    def universal_search(self, query: str) -> list:
+        """Search across all fields: content, title, tags, and links."""
+        search_engine = SearchEngine(self.storage_manager)
+        return search_engine.universal_search(query)
