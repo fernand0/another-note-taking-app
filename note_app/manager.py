@@ -11,24 +11,72 @@ class NoteManager:
     def __init__(self, storage_dir: str = "notes"):
         self.storage_manager = StorageManager(storage_dir)
         
-    def create_note(self, title: str, content: str = "", tags: list = None, origin: str = "") -> bool:
-        """Create a new note."""
+    def create_note(self, title: str = None, content: str = "", tags: list = None, origin: str = "") -> any:
+        """Create a new note. If title is not provided, it is generated from content."""
+        if not title:
+            if not content:
+                return False
+                
+            # Generate a title from the content
+            # Take the first 5 words or the entire content if shorter, then add timestamp for uniqueness
+            words = content.split()
+            if len(words) > 5:
+                base_title = " ".join(words[:5])
+            else:
+                base_title = content
+
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            # Ensure title doesn't exceed a reasonable length
+            max_title_len = 100
+            if len(base_title) > max_title_len - len(timestamp) - 1: # -1 for underscore
+                base_title = base_title[:max_title_len - len(timestamp) - 1 - 3] + "..." # -3 for ellipsis
+            
+            title = f"{base_title}_{timestamp}"
+
         # Check if note already exists
         existing_note = self.storage_manager.load_note(title)
         if existing_note:
             return False  # Note already exists
             
         note = Note(title=title, content=content, tags=tags or [], origin=origin)
-        return self.storage_manager.save_note(note)
+        if self.storage_manager.save_note(note):
+            return title
+        return False
         
+    def resolve_title(self, title_or_number: str) -> str:
+        """
+        Resolve a note title from either a string title or a number.
+        If the input is a number, treat it as an index in the list of notes.
+        """
+        if title_or_number is None:
+            return None
+            
+        try:
+            index = int(title_or_number)
+            all_notes = self.storage_manager.list_notes()
+            if 0 < index <= len(all_notes):
+                return all_notes[index - 1]  # Convert to 0-indexed
+            else:
+                return None  # Invalid index
+        except (ValueError, TypeError):
+            # Input is not a number, treat as title
+            return str(title_or_number)
+
     def read_note(self, title: str) -> Note:
-        """Read a note by title."""
-        return self.storage_manager.load_note(title)
+        """Read a note by title or index."""
+        resolved_title = self.resolve_title(title)
+        if not resolved_title:
+            return None
+        return self.storage_manager.load_note(resolved_title)
         
     def update_note(self, title: str, content: str = None, tags: list = None, 
                     add_tags: list = None, remove_tags: list = None, origin: str = None) -> bool:
         """Update an existing note."""
-        note = self.storage_manager.load_note(title)
+        resolved_title = self.resolve_title(title)
+        if not resolved_title:
+            return False
+            
+        note = self.storage_manager.load_note(resolved_title)
         if not note:
             return False
             
@@ -58,8 +106,11 @@ class NoteManager:
         return self.storage_manager.save_note(note)
         
     def delete_note(self, title: str) -> bool:
-        """Delete a note by title."""
-        return self.storage_manager.delete_note(title)
+        """Delete a note by title or index."""
+        resolved_title = self.resolve_title(title)
+        if not resolved_title:
+            return False
+        return self.storage_manager.delete_note(resolved_title)
         
     def list_notes(self) -> list:
         """List all note titles."""
@@ -76,25 +127,41 @@ class NoteManager:
         
     def add_reference(self, note_title: str, ref_title: str) -> bool:
         """Add a reference from one note to another."""
-        note = self.storage_manager.load_note(note_title)
+        resolved_title = self.resolve_title(note_title)
+        resolved_ref_title = self.resolve_title(ref_title)
+        
+        if not resolved_title or not resolved_ref_title:
+            return False
+            
+        note = self.storage_manager.load_note(resolved_title)
         if not note:
             return False
             
-        note.add_reference(ref_title)
+        note.add_reference(resolved_ref_title)
         return self.storage_manager.save_note(note)
         
     def remove_reference(self, note_title: str, ref_title: str) -> bool:
         """Remove a reference from one note to another."""
-        note = self.storage_manager.load_note(note_title)
+        resolved_title = self.resolve_title(note_title)
+        resolved_ref_title = self.resolve_title(ref_title)
+        
+        if not resolved_title or not resolved_ref_title:
+            return False
+            
+        note = self.storage_manager.load_note(resolved_title)
         if not note:
             return False
             
-        note.remove_reference(ref_title)
+        note.remove_reference(resolved_ref_title)
         return self.storage_manager.save_note(note)
         
     def get_note_references(self, title: str) -> list:
         """Get all references in a note."""
-        note = self.storage_manager.load_note(title)
+        resolved_title = self.resolve_title(title)
+        if not resolved_title:
+            return []
+            
+        note = self.storage_manager.load_note(resolved_title)
         if not note:
             return []
             
@@ -102,12 +169,16 @@ class NoteManager:
         
     def get_back_references(self, title: str) -> list:
         """Find all notes that reference the given note."""
+        resolved_title = self.resolve_title(title)
+        if not resolved_title:
+            return []
+            
         all_notes = self.list_notes()
         back_refs = []
 
         for note_title in all_notes:
             note = self.storage_manager.load_note(note_title)
-            if note and title in note.references:
+            if note and resolved_title in note.references:
                 back_refs.append(note_title)
 
         return back_refs

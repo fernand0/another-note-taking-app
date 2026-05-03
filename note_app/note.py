@@ -12,13 +12,49 @@ class Note:
                  references: List[str] = None, urls: List[str] = None, 
                  origin: str = "", created_at: datetime = None):
         self.title = title
-        self.content = content
         self.tags = tags or []
+        
+        # Extract tags from content if they are at the end
+        processed_content, extracted_tags = self._extract_tags_from_content(content)
+        self.content = processed_content
+        for tag in extracted_tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
+
         self.references = references or []  # For referencing other notes
         self.urls = urls or []  # For dedicated URLs
         self.origin = origin  # Source or origin of the note
         self.created_at = created_at or datetime.now()
         self.updated_at = datetime.now()
+
+    def _extract_tags_from_content(self, content: str):
+        """Extract hashtag tags from the end of the content."""
+        if not content:
+            return content, []
+            
+        lines = content.split('\n')
+        if not lines:
+            return content, []
+            
+        last_line = lines[-1]
+        words = last_line.split()
+        
+        extracted_tags = []
+        # Work backwards from the end
+        while words and words[-1].startswith('#') and len(words[-1]) > 1:
+            tag = words.pop().lstrip('#')
+            if tag not in extracted_tags:
+                extracted_tags.append(tag)
+        
+        if extracted_tags:
+            # Reconstruct the last line without the extracted tags
+            new_last_line = " ".join(words)
+            lines[-1] = new_last_line
+            # Join lines back, rstrip to remove any trailing whitespace/newlines left from removal
+            new_content = "\n".join(lines).rstrip()
+            return new_content, list(reversed(extracted_tags))
+            
+        return content, []
         
     def add_tag(self, tag: str):
         """Add a tag to the note."""
@@ -42,7 +78,11 @@ class Note:
             
     def update_content(self, new_content: str):
         """Update the content of the note."""
-        self.content = new_content
+        processed_content, extracted_tags = self._extract_tags_from_content(new_content)
+        self.content = processed_content
+        for tag in extracted_tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
         self.updated_at = datetime.now()
         
     def get_links(self) -> List[str]:

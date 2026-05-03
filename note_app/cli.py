@@ -6,6 +6,7 @@ import subprocess
 from .note import Note
 from .storage import StorageManager
 from .config import Config
+from .manager import NoteManager
 
 
 class NoteAppCLI:
@@ -18,23 +19,7 @@ class NoteAppCLI:
         if storage_dir is None:
             storage_dir = self.config.storage_dir
         self.storage_manager = StorageManager(storage_dir)
-        
-    def resolve_note_title(self, title_or_number: str) -> str:
-        """
-        Resolve a note title from either a string title or a number.
-        If the input is a number, treat it as an index in the list of notes.
-        """
-        # Check if the input is a number
-        try:
-            index = int(title_or_number)
-            all_notes = self.storage_manager.list_notes()
-            if 0 < index <= len(all_notes):
-                return all_notes[index - 1]  # Convert to 0-indexed
-            else:
-                return None  # Invalid index
-        except ValueError:
-            # Input is not a number, treat as title
-            return title_or_number
+        self.note_manager = NoteManager(storage_dir)
         
     def run(self):
         """Run the CLI application."""
@@ -44,14 +29,14 @@ class NoteAppCLI:
         
         # Create command
         create_parser = subparsers.add_parser('create', help='Create a new note')
-        create_parser.add_argument('title', help='Title of the note')
+        create_parser.add_argument('title', nargs='?', help='Title of the note')
         create_parser.add_argument('--content', '-c', help='Content of the note')
         create_parser.add_argument('--tags', '-t', nargs='*', help='Tags for the note')
         create_parser.add_argument('--origin', help='Origin/source of the note')
 
         # Add command (alias for create)
         add_parser = subparsers.add_parser('add', help='Create a new note (alias for create)')
-        add_parser.add_argument('title', help='Title of the note')
+        add_parser.add_argument('title', nargs='?', help='Title of the note')
         add_parser.add_argument('--content', '-c', help='Content of the note')
         add_parser.add_argument('--tags', '-t', nargs='*', help='Tags for the note')
         add_parser.add_argument('--origin', help='Origin/source of the note')
@@ -237,68 +222,37 @@ class NoteAppCLI:
             print("No content provided to create a note.")
             return
 
-        # Generate a title from the content
-        # Take the first 5 words or the entire content if shorter, then add timestamp for uniqueness
-        words = full_content.split()
-        if len(words) > 5:
-            base_title = " ".join(words[:5])
+        title = self.note_manager.create_note(content=full_content)
+        if title:
+            print(f"Note '{title}' created successfully.")
         else:
-            base_title = full_content
-
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        # Ensure title doesn't exceed a reasonable length if content is very long
-        max_title_len = 100
-        if len(base_title) > max_title_len - len(timestamp) - 1: # -1 for underscore
-            base_title = base_title[:max_title_len - len(timestamp) - 1 - 3] + "..." # -3 for ellipsis
-        
-        title = f"{base_title}_{timestamp}"
-
-        # Create a dummy args object for handle_create
-        class DefaultCreateArgs:
-            def __init__(self, title, content):
-                self.title = title
-                self.content = content
-                self.tags = None
-                self.origin = None
-
-        default_args = DefaultCreateArgs(title=title, content=full_content)
-        self.handle_create(default_args)
+            print("Failed to create note.")
             
     def handle_create(self, args):
         """Handle the create command."""
-        # Check if note already exists
-        existing_note = self.storage_manager.load_note(args.title)
-        if existing_note:
-            print(f"Note '{args.title}' already exists. Use 'update' to modify it.")
-            return
-            
-        note = Note(title=args.title, content=args.content or "", origin=args.origin or "")
+        title = self.note_manager.create_note(
+            title=args.title, 
+            content=args.content or "", 
+            tags=args.tags, 
+            origin=args.origin or ""
+        )
         
-        # Add tags if provided
-        if args.tags:
-            for tag in args.tags:
-                note.add_tag(tag)
-                
-        success = self.storage_manager.save_note(note)
-        if success:
-            print(f"Note '{args.title}' created successfully.")
+        if title:
+            print(f"Note '{title}' created successfully.")
         else:
-            print(f"Failed to create note '{args.title}'.")
+            if not args.title and not args.content:
+                print("Error: Either title or content must be provided.")
+            else:
+                print(f"Failed to create note '{args.title or 'with generated title'}'. It might already exist.")
             
     def handle_read(self, args):
         """Handle the read command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        note = self.storage_manager.load_note(resolved_title)
+        note = self.note_manager.read_note(args.title)
         if note:
             # Get the position of this note in the list
             all_notes = self.storage_manager.list_notes()
             try:
-                position = all_notes.index(resolved_title) + 1  # +1 to make it 1-indexed
+                position = all_notes.index(note.title) + 1  # +1 to make it 1-indexed
                 print(f"\nNote #{position}: {note.title}")
             except ValueError:
                 print(f"\nTitle: {note.title}")
@@ -326,64 +280,33 @@ class NoteAppCLI:
             print(note.content)
             print("-" * 40)
         else:
-            print(f"Note '{resolved_title}' not found.")
+            print(f"Note '{args.title}' not found.")
             
     def handle_update(self, args):
         """Handle the update command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        note = self.storage_manager.load_note(resolved_title)
-        if not note:
-            print(f"Note '{resolved_title}' not found.")
-            return
-
-        # Update content if provided
-        if args.content is not None:
-            note.update_content(args.content)
-
-        # Update origin if provided
-        if args.origin is not None:
-            note.origin = args.origin
-            from datetime import datetime
-            note.updated_at = datetime.now()
-
-        # Add tags if provided
-        if args.add_tag:
-            for tag in args.add_tag:
-                note.add_tag(tag)
-
-        # Remove tags if provided
-        if args.remove_tag:
-            for tag in args.remove_tag:
-                note.remove_tag(tag)
-
-        success = self.storage_manager.save_note(note)
+        success = self.note_manager.update_note(
+            title=args.title,
+            content=args.content,
+            origin=args.origin,
+            add_tags=args.add_tag,
+            remove_tags=args.remove_tag
+        )
         if success:
-            print(f"Note '{resolved_title}' updated successfully.")
+            print(f"Note '{args.title}' updated successfully.")
         else:
-            print(f"Failed to update note '{resolved_title}'.")
+            print(f"Note '{args.title}' not found or failed to update.")
             
     def handle_delete(self, args):
         """Handle the delete command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        success = self.storage_manager.delete_note(resolved_title)
+        success = self.note_manager.delete_note(args.title)
         if success:
-            print(f"Note '{resolved_title}' deleted successfully.")
+            print(f"Note '{args.title}' deleted successfully.")
         else:
-            print(f"Note '{resolved_title}' not found or failed to delete.")
+            print(f"Note '{args.title}' not found or failed to delete.")
             
     def handle_list(self, args):
         """Handle the list command."""
-        notes = self.storage_manager.list_notes()
+        notes = self.note_manager.list_notes()
         if notes:
             print(f"Found {len(notes)} note(s) in {self.storage_manager.storage_dir}:")
             for i, title in enumerate(notes, 1):
@@ -393,112 +316,60 @@ class NoteAppCLI:
             
     def handle_add_ref(self, args):
         """Handle the add-ref command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-
-        # Also resolve the reference title if it's a number
-        resolved_ref_title = self.resolve_note_title(args.ref_title)
-        if resolved_ref_title is None:
-            print(f"Invalid note number: {args.ref_title}")
-            return
-
-        note = self.storage_manager.load_note(resolved_title)
-        if not note:
-            print(f"Note '{resolved_title}' not found.")
-            return
-
-        note.add_reference(resolved_ref_title)
-        success = self.storage_manager.save_note(note)
+        success = self.note_manager.add_reference(args.title, args.ref_title)
         if success:
-            print(f"Reference to '{resolved_ref_title}' added to note '{resolved_title}'.")
+            print(f"Reference to '{args.ref_title}' added to note '{args.title}'.")
         else:
-            print(f"Failed to update note '{resolved_title}'.")
+            print(f"Failed to update note '{args.title}'.")
             
     def handle_remove_ref(self, args):
         """Handle the remove-ref command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-
-        note = self.storage_manager.load_note(resolved_title)
-        if not note:
-            print(f"Note '{resolved_title}' not found.")
-            return
-
-        # Also resolve the reference title if it's a number
-        resolved_ref_title = self.resolve_note_title(args.ref_title)
-        if resolved_ref_title is None:
-            print(f"Invalid note number: {args.ref_title}")
-            return
-
-        note.remove_reference(resolved_ref_title)
-        success = self.storage_manager.save_note(note)
+        success = self.note_manager.remove_reference(args.title, args.ref_title)
         if success:
-            print(f"Reference to '{resolved_ref_title}' removed from note '{resolved_title}'.")
+            print(f"Reference to '{args.ref_title}' removed from note '{args.title}'.")
         else:
-            print(f"Failed to update note '{resolved_title}'.")
+            print(f"Failed to update note '{args.title}'.")
             
     def handle_show_refs(self, args):
         """Handle the show-refs command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        note = self.storage_manager.load_note(resolved_title)
-        if not note:
-            print(f"Note '{resolved_title}' not found.")
-            return
-            
-        if note.references:
-            print(f"References in note '{resolved_title}':")
-            for ref in note.references:
+        refs = self.note_manager.get_note_references(args.title)
+        if refs:
+            print(f"References in note '{args.title}':")
+            for ref in refs:
                 print(f"- {ref}")
         else:
-            print(f"Note '{resolved_title}' has no references.")
+            # Check if note exists
+            if self.note_manager.read_note(args.title):
+                print(f"Note '{args.title}' has no references.")
+            else:
+                print(f"Note '{args.title}' not found.")
             
     def handle_show_back_refs(self, args):
         """Handle the show-back-refs command."""
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        # We need to use the manager to get back references
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
-        back_refs = manager.get_back_references(resolved_title)
+        back_refs = self.note_manager.get_back_references(args.title)
         if back_refs:
-            print(f"Notes that reference '{resolved_title}':")
+            print(f"Notes that reference '{args.title}':")
             for ref in back_refs:
                 print(f"- {ref}")
         else:
-            print(f"No notes reference '{resolved_title}'.")
+            # Check if note exists
+            if self.note_manager.read_note(args.title):
+                print(f"No notes reference '{args.title}'.")
+            else:
+                print(f"Note '{args.title}' not found.")
 
     def handle_universal_search(self, args):
         """Handle the universal search command (searches all fields)."""
-        # We need to use the manager to perform searches
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
         if not args.query:
             print("Usage: note-taker search \"search_term\"")
             print("Searches across all fields: content, title, tags, links, and dedicated URLs")
             return
             
-        results = manager.universal_search(args.query)
+        results = self.note_manager.universal_search(args.query)
         
         if results:
             # Get the full list of notes to determine positions
-            all_notes = self.storage_manager.list_notes()
+            all_notes = self.note_manager.list_notes()
             print(f"Found {len(results)} note(s) matching your search across all fields:")
             for title in results:
                 position = all_notes.index(title) + 1  # +1 to make it 1-indexed
@@ -508,95 +379,64 @@ class NoteAppCLI:
 
     def handle_add_url(self, args):
         """Handle the add-url command."""
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        note = manager.read_note(resolved_title)
+        note = self.note_manager.read_note(args.title)
         if not note:
-            print(f"Note '{resolved_title}' not found.")
+            print(f"Note '{args.title}' not found.")
             return
             
         note.add_url(args.url)
-        success = manager.storage_manager.save_note(note)
+        success = self.storage_manager.save_note(note)
         if success:
-            print(f"URL '{args.url}' added to note '{resolved_title}'.")
+            print(f"URL '{args.url}' added to note '{note.title}'.")
         else:
-            print(f"Failed to update note '{resolved_title}'.")
+            print(f"Failed to update note '{note.title}'.")
             
     def handle_remove_url(self, args):
         """Handle the remove-url command."""
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        note = manager.read_note(resolved_title)
+        note = self.note_manager.read_note(args.title)
         if not note:
-            print(f"Note '{resolved_title}' not found.")
+            print(f"Note '{args.title}' not found.")
             return
             
         note.remove_url(args.url)
-        success = manager.storage_manager.save_note(note)
+        success = self.storage_manager.save_note(note)
         if success:
-            print(f"URL '{args.url}' removed from note '{resolved_title}'.")
+            print(f"URL '{args.url}' removed from note '{note.title}'.")
         else:
-            print(f"Failed to update note '{resolved_title}'.")
+            print(f"Failed to update note '{note.title}'.")
             
     def handle_show_urls(self, args):
         """Handle the show-urls command."""
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
-        # Resolve the title from either text or number
-        resolved_title = self.resolve_note_title(args.title)
-        if resolved_title is None:
-            print(f"Invalid note number: {args.title}")
-            return
-            
-        note = manager.read_note(resolved_title)
+        note = self.note_manager.read_note(args.title)
         if not note:
-            print(f"Note '{resolved_title}' not found.")
+            print(f"Note '{args.title}' not found.")
             return
             
         urls = note.get_urls()
         if urls:
-            print(f"URLs in note '{resolved_title}':")
+            print(f"URLs in note '{note.title}':")
             for url in urls:
                 print(f"- {url}")
         else:
-            print(f"Note '{resolved_title}' has no dedicated URLs.")
+            print(f"Note '{note.title}' has no dedicated URLs.")
             
     def handle_field_search(self, args):
         """Handle the field-specific search command."""
-        # We need to use the manager to perform searches
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
         if args.search_type == 'content':
-            results = manager.search_content(args.query)
+            results = self.note_manager.search_content(args.query)
         elif args.search_type == 'title':
-            results = manager.search_titles(args.query)
+            results = self.note_manager.search_titles(args.query)
         elif args.search_type == 'tag':
-            results = manager.search_tags(args.tag)
+            results = self.note_manager.search_tags(args.tag)
         elif args.search_type == 'link':
-            results = manager.search_links(args.link)
+            results = self.note_manager.search_links(args.link)
         else:
             print("Invalid search type. Use: content, title, tag, or link")
             return
             
         if results:
             # Get the full list of notes to determine positions
-            all_notes = self.storage_manager.list_notes()
+            all_notes = self.note_manager.list_notes()
             print(f"Found {len(results)} note(s) matching your search:")
             for title in results:
                 position = all_notes.index(title) + 1  # +1 to make it 1-indexed
@@ -606,11 +446,7 @@ class NoteAppCLI:
 
     def handle_advanced_search(self, args):
         """Handle the advanced-search command."""
-        # We need to use the manager to perform searches
-        from .manager import NoteManager
-        manager = NoteManager(self.storage_manager.storage_dir)
-        
-        results = manager.advanced_search(
+        results = self.note_manager.advanced_search(
             content_query=args.content,
             title_query=args.title,
             tag_query=args.tag,

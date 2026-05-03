@@ -92,6 +92,79 @@ def test_note_manager():
         print("✓ Note deleted successfully")
 
 
+def test_hashtag_tags_extraction():
+    """Test extracting hashtag tags from the end of the note content."""
+    print("\nTesting hashtag tags extraction...")
+    
+    # Test case: Multiple tags at the end
+    note = Note("Hashtag Test", "This is a note with hashtags #tag1 #tag2")
+    assert "tag1" in note.tags, "tag1 not extracted"
+    assert "tag2" in note.tags, "tag2 not extracted"
+    assert note.content == "This is a note with hashtags", f"Content not stripped correctly: {note.content}"
+    print("✓ Hashtags extracted and content stripped")
+    
+    # Test case: Hashtags in middle preserved
+    note2 = Note("Hashtag Middle", "This #note has a hashtag in the middle")
+    assert "note" not in note2.tags, "Middle hashtag should not be a tag"
+    assert note2.content == "This #note has a hashtag in the middle"
+    print("✓ Middle hashtags preserved")
+    
+    # Test case: Update content with hashtags
+    note.update_content("New content #tag3")
+    assert "tag3" in note.tags, "New tag not extracted during update"
+    assert note.content == "New content", "Content not stripped during update"
+    print("✓ Hashtags extracted during update")
+
+
+def test_note_creation_without_title():
+    """Test creating a note without an explicit title."""
+    print("\nTesting note creation without title...")
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        manager = NoteManager(temp_dir)
+        
+        content = "This is a note without a title"
+        title = manager.create_note(content=content)
+        
+        assert title is not False, "Failed to create note without title"
+        assert "This is a note without_" in title, f"Title not generated correctly: {title}"
+        
+        # Verify it can be read
+        note = manager.read_note(title)
+        assert note.content == content, "Content mismatch"
+        print(f"✓ Note created with generated title: {title}")
+
+
+def test_title_resolution():
+    """Test resolving titles from indices."""
+    print("\nTesting title resolution...")
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        manager = NoteManager(temp_dir)
+        
+        manager.create_note("Note A", "Content A")
+        manager.create_note("Note B", "Content B")
+        
+        # Test resolution
+        assert manager.resolve_title("Note A") == "Note A"
+        assert manager.resolve_title("1") == "Note A"
+        assert manager.resolve_title("2") == "Note B"
+        assert manager.resolve_title("3") is None
+        print("✓ Basic title resolution works")
+        
+        # Test read by index
+        note = manager.read_note("1")
+        assert note is not None and note.title == "Note A"
+        print("✓ Read by index works")
+        
+        # Test delete by index
+        success = manager.delete_note("1")
+        assert success
+        assert len(manager.list_notes()) == 1
+        assert manager.list_notes()[0] == "Note B"
+        print("✓ Delete by index works")
+
+
 def run_tests():
     """Run all tests."""
     print("Running tests for note-taking application...\n")
@@ -99,6 +172,9 @@ def run_tests():
     try:
         test_note_creation()
         test_note_manager()
+        test_hashtag_tags_extraction()
+        test_note_creation_without_title()
+        test_title_resolution()
         print("\n✓ All tests passed!")
     except AssertionError as e:
         print(f"\n✗ Test failed: {e}")
