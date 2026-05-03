@@ -52,6 +52,7 @@ class NoteAppCLI:
         # Update command
         update_parser = subparsers.add_parser('update', help='Update a note')
         update_parser.add_argument('title', help='Title of the note to update')
+        update_parser.add_argument('trailing_content', nargs='*', help='New content for the note (positional)')
         update_parser.add_argument('--content', '-c', help='New content for the note')
         update_parser.add_argument('--add-tag', action='append', help='Add a tag to the note')
         update_parser.add_argument('--remove-tag', action='append', help='Remove a tag from the note')
@@ -292,9 +293,14 @@ class NoteAppCLI:
             
     def handle_update(self, args):
         """Handle the update command."""
+        # Use trailing_content if provided, otherwise use args.content
+        content = args.content
+        if args.trailing_content:
+            content = " ".join(args.trailing_content)
+
         success = self.note_manager.update_note(
             title=args.title,
-            content=args.content,
+            content=content,
             origin=args.origin,
             add_tags=args.add_tag,
             remove_tags=args.remove_tag
