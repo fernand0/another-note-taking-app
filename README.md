@@ -5,6 +5,8 @@ A text-based note-taking application with a CLI interface that supports links, t
 ## Features
 
 - **Full CRUD Support**: Create, read, update, and delete notes.
+- **Hashtag Support**: Automatically extract tags from hashtags (e.g., `#work`) at the end of titles or content.
+- **Automatic Titles**: Create notes without a title; one will be generated from the content.
 - **Organization**: Add tags and specify the **origin** (source) of your notes.
 - **Interconnectivity**: Reference other notes and track **back-references** automatically.
 - **Git Integration**: Automatically commit changes (add, update, delete) if your storage directory is a Git repository.
@@ -78,8 +80,18 @@ This command will push all committed changes to the configured remote repository
 # Create a note with tags and origin
 note-taker create "My Note" --content "Note content..." --tags tag1 --origin "Telegram"
 
+# Create a note with hashtags (tags "work" and "urgent" are automatically extracted)
+note-taker create "Project Notes #work #urgent"
+
+# Create a note without a title (one is generated from the first 5 words)
+note-taker create --content "This is some content that will form the title"
+
+# Quick add (no command needed, title generated from content)
+note-taker "Meeting tomorrow at 10am #reminder"
+
 # Alternative 'add' command (alias for create)
 note-taker add "My Note" --content "Note content..." --tags tag1 --origin "Telegram"
+```
 
 # Read a note (shows only populated fields)
 note-taker read "My Note"
