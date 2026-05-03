@@ -75,8 +75,9 @@ class NoteManager:
         return self.storage_manager.load_note(resolved_title)
         
     def update_note(self, title: str, content: str = None, tags: list = None, 
-                    add_tags: list = None, remove_tags: list = None, origin: str = None) -> bool:
-        """Update an existing note."""
+                    add_tags: list = None, remove_tags: list = None, 
+                    origin: str = None, new_title: str = None) -> bool:
+        """Update an existing note, optionally renaming it."""
         resolved_title = self.resolve_title(title)
         if not resolved_title:
             return False
@@ -85,6 +86,15 @@ class NoteManager:
         if not note:
             return False
             
+        old_title = note.title
+
+        # Update title if provided
+        if new_title and new_title != old_title:
+            # Check if new title already exists
+            if self.storage_manager.load_note(new_title):
+                return False
+            note.title = new_title
+
         # Update content if provided
         if content is not None:
             note.update_content(content)
@@ -108,7 +118,13 @@ class NoteManager:
             for tag in remove_tags:
                 note.remove_tag(tag)
                 
-        return self.storage_manager.save_note(note)
+        if self.storage_manager.save_note(note):
+            # If title changed, delete the old file
+            if new_title and new_title != old_title:
+                self.storage_manager.delete_note(old_title)
+            return True
+            
+        return False
         
     def delete_note(self, title: str) -> bool:
         """Delete a note by title or index."""

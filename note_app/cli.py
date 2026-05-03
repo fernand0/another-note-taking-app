@@ -51,8 +51,9 @@ class NoteAppCLI:
         
         # Update command
         update_parser = subparsers.add_parser('update', help='Update a note')
-        update_parser.add_argument('title', help='Title of the note to update')
-        update_parser.add_argument('trailing_content', nargs='*', help='New content for the note (positional)')
+        update_parser.add_argument('title', help='Title or index of the note to update')
+        update_parser.add_argument('trailing_content', nargs='*', help='New content for the note')
+        update_parser.add_argument('--new-title', help='New title for the note')
         update_parser.add_argument('--content', '-c', help='New content for the note')
         update_parser.add_argument('--add-tag', action='append', help='Add a tag to the note')
         update_parser.add_argument('--remove-tag', action='append', help='Remove a tag from the note')
@@ -303,10 +304,14 @@ class NoteAppCLI:
             content=content,
             origin=args.origin,
             add_tags=args.add_tag,
-            remove_tags=args.remove_tag
+            remove_tags=args.remove_tag,
+            new_title=args.new_title
         )
         if success:
-            print(f"Note '{args.title}' updated successfully.")
+            if args.new_title:
+                print(f"Note updated and renamed to '{args.new_title}' successfully.")
+            else:
+                print(f"Note '{args.title}' updated successfully.")
         else:
             print(f"Note '{args.title}' not found or failed to update.")
             
