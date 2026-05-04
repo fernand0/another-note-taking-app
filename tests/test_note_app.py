@@ -35,6 +35,22 @@ def test_note_creation():
         print("✓ Note loaded and verified successfully")
 
 
+def test_long_url_extraction():
+    """Test extraction of long URLs with hyphens and query parameters."""
+    print("\nTesting long URL extraction...")
+    
+    long_url = "https://cultura.unizar.es/actividades/y-no-quedo-ninguno-teatro-ataju-xxvi-muestra-de-teatro-universitario"
+    complex_url = "https://example.com/path-with-hyphen/file_name.html?query-param=value-1#fragment-id"
+    content = f"Check this out: {long_url} and also {complex_url}"
+    
+    note = Note("Link Test", content)
+    links = note.get_links()
+    
+    assert long_url in links, f"Long URL not correctly extracted. Found: {links}"
+    assert complex_url in links, f"Complex URL not correctly extracted. Found: {links}"
+    print("✓ Long and complex URLs extracted successfully")
+
+
 def test_note_manager():
     """Test the NoteManager functionality."""
     print("\nTesting NoteManager...")

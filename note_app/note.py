@@ -121,7 +121,8 @@ class Note:
     def get_links(self) -> List[str]:
         """Extract all URLs from the note content."""
         # Regular expression to find URLs in the content
-        url_pattern = r'https?://(?:[-\w.])+(?:[:\d]+)?(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?)?'
+        # Note: '-' is placed at the end of each character set to be treated as a literal
+        url_pattern = r'https?://(?:[\w.-])+(?:[:\d]+)?(?:/(?:[\w/_.~-])*(?:\?(?:[\w&=%.~+-])*)?(?:#(?:[\w.~-])*)?)?'
         return re.findall(url_pattern, self.content)
         
     def add_url(self, url: str):
