@@ -119,11 +119,24 @@ class Note:
         self.updated_at = datetime.now()
         
     def get_links(self) -> List[str]:
-        """Extract all URLs from the note content."""
+        """Extract all URLs from the note title and content."""
         # Regular expression to find URLs in the content
         # Note: '-' is placed at the end of each character set to be treated as a literal
         url_pattern = r'https?://(?:[\w.-])+(?:[:\d]+)?(?:/(?:[\w/_.~-])*(?:\?(?:[\w&=%.~+-])*)?(?:#(?:[\w.~-])*)?)?'
-        return re.findall(url_pattern, self.content)
+
+        # Combine title and content for extraction
+        combined_text = f"{self.title}\n{self.content}"
+        links = re.findall(url_pattern, combined_text)
+
+        # Use a list to preserve order while removing duplicates
+        seen = set()
+        unique_links = []
+        for link in links:
+            if link not in seen:
+                unique_links.append(link)
+                seen.add(link)
+        return unique_links
+
         
     def add_url(self, url: str):
         """Add a URL to the note's dedicated URLs list."""

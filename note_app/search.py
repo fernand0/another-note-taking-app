@@ -73,91 +73,99 @@ class SearchEngine:
         
     def search_by_link(self, link: str) -> List[str]:
         """
-        Search for notes containing the specified link.
-        
+        Search for notes containing the specified link (substring match).
+
         Args:
-            link: The link to search for
-            
+            link: The link or partial link to search for
+
         Returns:
             A list of note titles that contain the link
         """
         matches = []
         all_notes = self.storage_manager.list_notes()
-        
+
+        link_query = link.lower()
         for title in all_notes:
             note = self.storage_manager.load_note(title)
-            if note and link in note.get_links():
-                matches.append(title)
-                
+            if note:
+                # Check both content-extracted links and dedicated URLs
+                all_links = [l.lower() for l in note.get_links()] + [u.lower() for u in note.get_urls()]
+                if any(link_query in l for l in all_links):
+                    matches.append(title)
+
         return matches
-        
+
     def advanced_search(self, content_query: str = None, title_query: str = None, 
                        tag_query: str = None, link_query: str = None) -> List[str]:
         """
         Perform an advanced search with multiple criteria.
-        
+
         Args:
             content_query: Search term for content
             title_query: Search term for titles
             tag_query: Search term for tags
-            link_query: Search term for links
-            
+            link_query: Search term for links (substring match)
+
         Returns:
             A list of note titles that match all specified criteria
         """
         # Start with all notes
         candidates = self.storage_manager.list_notes()
         results = []
-        
+
         for title in candidates:
             note = self.storage_manager.load_note(title)
             if not note:
                 continue
-                
+
             # Check content if specified
             if content_query and content_query.lower() not in note.content.lower():
                 continue
-                
+
             # Check title if specified
             if title_query and title_query.lower() not in title.lower():
                 continue
-                
+
             # Check tags if specified
-            if tag_query and tag_query not in [t.lower() for t in note.tags]:
+            if tag_query and tag_query.lower() not in [t.lower() for t in note.tags]:
                 continue
-                
+
             # Check links if specified
-            if link_query and link_query not in note.get_links():
-                continue
-                
+            if link_query:
+                l_query = link_query.lower()
+                all_links = [l.lower() for l in note.get_links()] + [u.lower() for u in note.get_urls()]
+                if not any(l_query in l for l in all_links):
+                    continue
+
             results.append(title)
-            
+
         return results
 
     def universal_search(self, query: str) -> List[str]:
         """
         Search across all fields: content, title, tags, links, and dedicated URLs.
-        
+
         Args:
             query: The search term to look for in any field
-            
+
         Returns:
             A list of note titles that match the query in any field
         """
         matches = set()
         all_notes = self.storage_manager.list_notes()
-        
+
+        query_lower = query.lower()
         for title in all_notes:
             note = self.storage_manager.load_note(title)
             if not note:
                 continue
-                
+
             # Check if query matches in any field
-            if (query.lower() in title.lower() or
-                query.lower() in note.content.lower() or
-                query.lower() in ' '.join([t.lower() for t in note.tags]) or
-                query in note.get_links() or
-                query in note.get_urls()):  # Added dedicated URLs
+            if (query_lower in title.lower() or
+                query_lower in note.content.lower() or
+                query_lower in ' '.join([t.lower() for t in note.tags]) or
+                any(query_lower in l.lower() for l in note.get_links()) or
+                any(query_lower in u.lower() for u in note.get_urls())):
                 matches.add(title)
-                
+
         return list(matches)
