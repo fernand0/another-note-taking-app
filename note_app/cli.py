@@ -104,8 +104,8 @@ class NoteAppCLI:
         
         # Show URLs command
         show_urls_parser = subparsers.add_parser('show-urls', 
-            help='Show all dedicated URLs in a note',
-            description='Show all dedicated URLs in a note')
+            help='Show all URLs in a note',
+            description='Show all URLs (dedicated and content-extracted) in a note')
         show_urls_parser.add_argument('title', help='Title of the note to show URLs for')
         
         # Universal search command (searches all fields)
@@ -439,13 +439,23 @@ class NoteAppCLI:
             print(f"Note '{args.title}' not found.")
             return
             
-        urls = note.get_urls()
-        if urls:
+        dedicated_urls = note.get_urls()
+        extracted_links = note.get_links()
+        
+        if dedicated_urls or extracted_links:
             print(f"URLs in note '{note.title}':")
-            for url in urls:
-                print(f"- {url}")
+            # Use a set to avoid duplicates between dedicated and extracted
+            seen = set()
+            for url in dedicated_urls:
+                if url not in seen:
+                    print(f"- {url}")
+                    seen.add(url)
+            for url in extracted_links:
+                if url not in seen:
+                    print(f"- {url}")
+                    seen.add(url)
         else:
-            print(f"Note '{note.title}' has no dedicated URLs.")
+            print(f"Note '{note.title}' has no URLs.")
             
     def handle_field_search(self, args):
         """Handle the field-specific search command."""
