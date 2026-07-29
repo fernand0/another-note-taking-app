@@ -8,25 +8,28 @@ from .storage import StorageManager
 from .config import Config
 from .manager import NoteManager
 
+from urllib.parse import urlparse
+from collections import Counter
+
 
 class NoteAppCLI:
     """
     Command Line Interface for the note-taking application.
     """
-    
+
     def __init__(self, storage_dir: str = None, config_path: str = None):
         self.config = Config(config_path=config_path)
         if storage_dir is None:
             storage_dir = self.config.storage_dir
         self.storage_manager = StorageManager(storage_dir)
         self.note_manager = NoteManager(storage_dir)
-        
+
     def run(self):
         """Run the CLI application."""
         parser = argparse.ArgumentParser(description="Text-based note-taking application")
         parser.add_argument('--config-file', help='Specify an alternative configuration file')
         subparsers = parser.add_subparsers(dest='command', help='Available commands')
-        
+
         # Create command
         create_parser = subparsers.add_parser('create', help='Create a new note')
         create_parser.add_argument('title', nargs='?', help='Title of the note')
@@ -40,7 +43,7 @@ class NoteAppCLI:
         add_parser.add_argument('--content', '-c', help='Content of the note')
         add_parser.add_argument('--tags', '-t', nargs='*', help='Tags for the note')
         add_parser.add_argument('--origin', help='Origin/source of the note')
-        
+
         # Read command
         read_parser = subparsers.add_parser('read', help='Read a note')
         read_parser.add_argument('title', help='Title of the note to read')
@@ -48,7 +51,7 @@ class NoteAppCLI:
         # Show command (alias for read)
         show_parser = subparsers.add_parser('show', help='Read a note (alias for read)')
         show_parser.add_argument('title', help='Title of the note to read')
-        
+
         # Update command
         update_parser = subparsers.add_parser('update', help='Update a note')
         update_parser.add_argument('title', help='Title or index of the note to update')
@@ -58,7 +61,7 @@ class NoteAppCLI:
         update_parser.add_argument('--add-tag', action='append', help='Add a tag to the note')
         update_parser.add_argument('--remove-tag', action='append', help='Remove a tag from the note')
         update_parser.add_argument('--origin', help='Update the origin/source of the note')
-        
+
         # Delete command
         delete_parser = subparsers.add_parser('delete', help='Delete a note')
         delete_parser.add_argument('title', help='Title of the note to delete')
@@ -66,78 +69,84 @@ class NoteAppCLI:
         # Del command (alias for delete)
         del_parser = subparsers.add_parser('del', help='Delete a note (alias for delete)')
         del_parser.add_argument('title', help='Title of the note to delete')
-        
+
         # List command
         list_parser = subparsers.add_parser('list', help='List all notes')
-        
+
+        # List urls command
+        list_urls_parser = subparsers.add_parser('list-urls', help='List urls in all notes')
+
+        # List urls command
+        list_urls_stats_parser = subparsers.add_parser('list-urls-stats', help='List urls in all notes')
+
         # Add reference command
         add_ref_parser = subparsers.add_parser('add-ref', help='Add a reference to another note')
         add_ref_parser.add_argument('title', help='Title of the note to update')
         add_ref_parser.add_argument('ref_title', help='Title of the note to reference')
-        
+
         # Remove reference command
         remove_ref_parser = subparsers.add_parser('remove-ref', help='Remove a reference from a note')
         remove_ref_parser.add_argument('title', help='Title of the note to update')
         remove_ref_parser.add_argument('ref_title', help='Title of the note reference to remove')
-        
+
         # Show references command
         show_refs_parser = subparsers.add_parser('show-refs', help='Show all references in a note')
         show_refs_parser.add_argument('title', help='Title of the note to show references for')
-        
+
         # Show back-references command
         show_back_refs_parser = subparsers.add_parser('show-back-refs', help='Show all notes that reference this note')
         show_back_refs_parser.add_argument('title', help='Title of the note to show back-references for')
-        
+
         # Add URL command
-        add_url_parser = subparsers.add_parser('add-url', 
+        add_url_parser = subparsers.add_parser('add-url',
             help='Add a URL to a note as a dedicated URL reference',
             description='Add a URL to a note as a dedicated URL reference')
         add_url_parser.add_argument('title', help='Title of the note to update')
         add_url_parser.add_argument('url', help='URL to add to the note')
-        
+
         # Remove URL command
-        remove_url_parser = subparsers.add_parser('remove-url', 
+        remove_url_parser = subparsers.add_parser('remove-url',
             help='Remove a URL from a note\'s dedicated URL references',
             description='Remove a URL from a note\'s dedicated URL references')
         remove_url_parser.add_argument('title', help='Title of the note to update')
         remove_url_parser.add_argument('url', help='URL to remove from the note')
-        
+
         # Show URLs command
-        show_urls_parser = subparsers.add_parser('show-urls', 
+        show_urls_parser = subparsers.add_parser('show-urls',
             help='Show all URLs in a note',
             description='Show all URLs (dedicated and content-extracted) in a note')
         show_urls_parser.add_argument('title', help='Title of the note to show URLs for')
-        
+
         # Universal search command (searches all fields)
-        universal_search_parser = subparsers.add_parser('search', 
+        universal_search_parser = subparsers.add_parser('search',
             help='Search for notes across all fields: content, title, tags, links, and dedicated URLs',
             description='Search for notes across all fields: content, title, tags, links, and dedicated URLs')
         universal_search_parser.add_argument('query', nargs='?', help='Search query for all fields')
-        
+
         # Separate search commands for specific fields
-        search_parser = subparsers.add_parser('field-search', 
+        search_parser = subparsers.add_parser('field-search',
             help='Search for notes in specific fields: content, title, tag, or link',
             description='Search for notes in specific fields: content, title, tag, or link')
         search_subparsers = search_parser.add_subparsers(dest='search_type', help='Search types')
-        
+
         # Search by content
         search_content_parser = search_subparsers.add_parser('content', help='Search notes by content')
         search_content_parser.add_argument('query', help='Search query')
-        
+
         # Search by title
         search_title_parser = search_subparsers.add_parser('title', help='Search notes by title')
         search_title_parser.add_argument('query', help='Search query')
-        
+
         # Search by tag
         search_tag_parser = search_subparsers.add_parser('tag', help='Search notes by tag')
         search_tag_parser.add_argument('tag', help='Tag to search for')
-        
+
         # Search by link
         search_link_parser = search_subparsers.add_parser('link', help='Search notes by link')
         search_link_parser.add_argument('link', help='Link to search for')
-        
+
         # Advanced search
-        advanced_search_parser = subparsers.add_parser('advanced-search', 
+        advanced_search_parser = subparsers.add_parser('advanced-search',
             help='Advanced search with multiple criteria across different fields',
             description='Advanced search with multiple criteria across different fields: content, title, tag, or link')
         advanced_search_parser.add_argument('--content', help='Search term for content')
@@ -164,10 +173,10 @@ class NoteAppCLI:
         join_parser.add_argument('title1', help='Title or index of the first note')
         join_parser.add_argument('title2', help='Title or index of the second note')
         join_parser.add_argument('--title', '-t', help='New title for the joined note')
-        
+
         # Get the list of known commands
         known_commands = list(subparsers.choices.keys())
-        
+
         # Check if the first argument (if it exists) is NOT a known command
         # sys.argv[0] is the script name, sys.argv[1] is the first actual argument
         if len(sys.argv) > 1 and sys.argv[1] not in known_commands:
@@ -177,7 +186,7 @@ class NoteAppCLI:
 
         # If it IS a known command, or no arguments, proceed with normal parsing
         args = parser.parse_args()
-        
+
         if args.command == 'create' or args.command == 'add':
             self.handle_create(args)
         elif args.command == 'read' or args.command == 'show':
@@ -188,6 +197,10 @@ class NoteAppCLI:
             self.handle_delete(args)
         elif args.command == 'list':
             self.handle_list(args)
+        elif args.command == 'list-urls':
+            self.handle_list_urls(args)
+        elif args.command == 'list-urls-stats':
+            self.handle_list_urls_stats(args)
         elif args.command == 'add-ref':
             self.handle_add_ref(args)
         elif args.command == 'remove-ref':
@@ -220,7 +233,7 @@ class NoteAppCLI:
             self.handle_join(args)
         else:
             parser.print_help()
-            
+
     def handle_default_create(self, content_parts):
         """
         Handles the creation of a new note when no specific command is given,
@@ -237,16 +250,16 @@ class NoteAppCLI:
             print(f"Note '{title}' created successfully.")
         else:
             print("Failed to create note.")
-            
+
     def handle_create(self, args):
         """Handle the create command."""
         title = self.note_manager.create_note(
-            title=args.title, 
-            content=args.content or "", 
-            tags=args.tags, 
+            title=args.title,
+            content=args.content or "",
+            tags=args.tags,
             origin=args.origin or ""
         )
-        
+
         if title:
             print(f"Note '{title}' created successfully.")
         else:
@@ -254,7 +267,7 @@ class NoteAppCLI:
                 print("Error: Either title or content must be provided.")
             else:
                 print(f"Failed to create note '{args.title or 'with generated title'}'. It might already exist.")
-            
+
     def handle_read(self, args):
         """Handle the read command."""
         note = self.note_manager.read_note(args.title)
@@ -266,32 +279,32 @@ class NoteAppCLI:
                 print(f"\nNote #{position}: {note.title}")
             except ValueError:
                 print(f"\nTitle: {note.title}")
-                
+
             if note.origin:
                 print(f"Origin: {note.origin}")
-                
+
             print(f"Created: {note.created_at}")
             print(f"Updated: {note.updated_at}")
-            
+
             if note.tags:
                 print(f"Tags: {', '.join(note.tags)}")
-                
+
             if note.references:
                 print(f"References: {', '.join(note.references)}")
-                
+
             if note.get_urls():
                 print(f"Dedicated URLs: {', '.join(note.get_urls())}")
-                
+
             if note.get_links():
                 print(f"Content-extracted links: {', '.join(note.get_links())}")
-                
+
             print("\nContent:")
             print("-" * 40)
             print(note.content)
             print("-" * 40)
         else:
             print(f"Note '{args.title}' not found.")
-            
+
     def handle_update(self, args):
         """Handle the update command."""
         # Use trailing_content if provided, otherwise use args.content
@@ -314,7 +327,7 @@ class NoteAppCLI:
                 print(f"Note '{args.title}' updated successfully.")
         else:
             print(f"Note '{args.title}' not found or failed to update.")
-            
+
     def handle_delete(self, args):
         """Handle the delete command."""
         success = self.note_manager.delete_note(args.title)
@@ -322,7 +335,30 @@ class NoteAppCLI:
             print(f"Note '{args.title}' deleted successfully.")
         else:
             print(f"Note '{args.title}' not found or failed to delete.")
-            
+
+    def handle_list_urls_stats(self, args):
+        """Handle the list command."""
+        notes = self.note_manager.list_notes()
+        urls = set()
+        if notes:
+            print(f"Found {len(notes)} note(s) in {self.storage_manager.storage_dir}:")
+            for i, title in enumerate(notes, 1):
+                # print(f"{i}. {title}")
+                urls_note = self.handle_get_urls(i)
+                if urls_note:
+                    urls = urls.union(urls_note)
+        else:
+            print(f"No notes found in {self.storage_manager.storage_dir}.")
+        print(urls)
+        domains = [urlparse(url).hostname for url in urls]
+        domain_counts = Counter(domains)
+        sorted_domains = domain_counts.most_common()
+        print(sorted_domains)
+
+
+
+
+
     def handle_list(self, args):
         """Handle the list command."""
         notes = self.note_manager.list_notes()
@@ -332,7 +368,7 @@ class NoteAppCLI:
                 print(f"{i}. {title}")
         else:
             print(f"No notes found in {self.storage_manager.storage_dir}.")
-            
+
     def handle_join(self, args):
         """Handle the join command."""
         title = self.note_manager.join_notes(args.title1, args.title2, args.title)
@@ -340,7 +376,7 @@ class NoteAppCLI:
             print(f"Notes joined successfully into '{title}'.")
         else:
             print("Failed to join notes. Ensure both notes exist and the target title is not already taken.")
-            
+
     def handle_add_ref(self, args):
         """Handle the add-ref command."""
         success = self.note_manager.add_reference(args.title, args.ref_title)
@@ -348,7 +384,7 @@ class NoteAppCLI:
             print(f"Reference to '{args.ref_title}' added to note '{args.title}'.")
         else:
             print(f"Failed to update note '{args.title}'.")
-            
+
     def handle_remove_ref(self, args):
         """Handle the remove-ref command."""
         success = self.note_manager.remove_reference(args.title, args.ref_title)
@@ -356,7 +392,7 @@ class NoteAppCLI:
             print(f"Reference to '{args.ref_title}' removed from note '{args.title}'.")
         else:
             print(f"Failed to update note '{args.title}'.")
-            
+
     def handle_show_refs(self, args):
         """Handle the show-refs command."""
         refs = self.note_manager.get_note_references(args.title)
@@ -370,7 +406,7 @@ class NoteAppCLI:
                 print(f"Note '{args.title}' has no references.")
             else:
                 print(f"Note '{args.title}' not found.")
-            
+
     def handle_show_back_refs(self, args):
         """Handle the show-back-refs command."""
         back_refs = self.note_manager.get_back_references(args.title)
@@ -391,9 +427,9 @@ class NoteAppCLI:
             print("Usage: note-taker search \"search_term\"")
             print("Searches across all fields: content, title, tags, links, and dedicated URLs")
             return
-            
+
         results = self.note_manager.universal_search(args.query)
-        
+
         if results:
             # Get the full list of notes to determine positions
             all_notes = self.note_manager.list_notes()
@@ -410,40 +446,66 @@ class NoteAppCLI:
         if not note:
             print(f"Note '{args.title}' not found.")
             return
-            
+
         note.add_url(args.url)
         success = self.storage_manager.save_note(note)
         if success:
             print(f"URL '{args.url}' added to note '{note.title}'.")
         else:
             print(f"Failed to update note '{note.title}'.")
-            
+
     def handle_remove_url(self, args):
         """Handle the remove-url command."""
         note = self.note_manager.read_note(args.title)
         if not note:
             print(f"Note '{args.title}' not found.")
             return
-            
+
         note.remove_url(args.url)
         success = self.storage_manager.save_note(note)
         if success:
             print(f"URL '{args.url}' removed from note '{note.title}'.")
         else:
             print(f"Failed to update note '{note.title}'.")
-            
-    def handle_show_urls(self, args):
+
+    def handle_get_urls(self, args):
         """Handle the show-urls command."""
-        note = self.note_manager.read_note(args.title)
+        note = self.note_manager.read_note(args)
         if not note:
             print(f"Note '{args.title}' not found.")
             return
-            
+
         dedicated_urls = note.get_urls()
         extracted_links = note.get_links()
-        
+
         if dedicated_urls or extracted_links:
-            print(f"URLs in note '{note.title}':")
+            # print(f"URLs in note '{note.title}':")
+            # Use a set to avoid duplicates between dedicated and extracted
+            seen = set()
+            for url in dedicated_urls:
+                if url not in seen:
+                    # print(f"- {url}")
+                    seen.add(url)
+            for url in extracted_links:
+                if url not in seen:
+                    print(f"- {url}")
+                    seen.add(url)
+            return seen
+        # else:
+        #     print(f"Note '{note.title}' has no URLs.")
+
+    def handle_show_urls(self, args):
+        """Handle the show-urls command."""
+        note = self.note_manager.read_note(args)
+        if not note:
+            print(f"Note '{args.title}' not found.")
+            return
+
+        dedicated_urls = note.get_urls()
+        extracted_links = note.get_links()
+
+        if dedicated_urls or extracted_links:
+            # print(f"URLs in note '{note.title}':")
             # Use a set to avoid duplicates between dedicated and extracted
             seen = set()
             for url in dedicated_urls:
@@ -454,9 +516,9 @@ class NoteAppCLI:
                 if url not in seen:
                     print(f"- {url}")
                     seen.add(url)
-        else:
-            print(f"Note '{note.title}' has no URLs.")
-            
+        # else:
+        #     print(f"Note '{note.title}' has no URLs.")
+
     def handle_field_search(self, args):
         """Handle the field-specific search command."""
         if args.search_type == 'content':
@@ -470,7 +532,7 @@ class NoteAppCLI:
         else:
             print("Invalid search type. Use: content, title, tag, or link")
             return
-            
+
         if results:
             # Get the full list of notes to determine positions
             all_notes = self.note_manager.list_notes()
@@ -489,7 +551,7 @@ class NoteAppCLI:
             tag_query=args.tag,
             link_query=args.link
         )
-        
+
         if results:
             print(f"Found {len(results)} note(s) matching your search:")
             for i, title in enumerate(results, 1):
@@ -509,7 +571,7 @@ class NoteAppCLI:
     def handle_init(self, args):
         """Handle the init command."""
         from pathlib import Path
-        
+
         # Determine the storage directory to use
         if args.storage_dir:
             storage_dir = os.path.abspath(args.storage_dir)
@@ -517,20 +579,20 @@ class NoteAppCLI:
             # Show default and ask for input interactively
             default_dir = str(Path.home() / "notes")
             user_input = input(f"Enter the directory for storing notes [default: {default_dir}]: ").strip()
-            
+
             if user_input:
                 storage_dir = os.path.abspath(user_input)
             else:
                 storage_dir = default_dir
-        
+
         # Create the storage directory if it doesn't exist
         os.makedirs(storage_dir, exist_ok=True)
         print(f"Notes directory initialized at: {storage_dir}")
-        
+
         # Update the config with the new storage directory
         self.config.storage_dir = storage_dir
         print(f"Configuration updated with storage directory: {storage_dir}")
-        
+
         # Initialize git repository in the storage directory if it doesn't exist
         if not os.path.exists(os.path.join(storage_dir, ".git")):
             try:
@@ -540,7 +602,7 @@ class NoteAppCLI:
                 print(f"Failed to initialize Git repository: {e}")
         else:
             print(f"Git repository already exists in {storage_dir}")
-        
+
         # Create a basic .gitignore file for the notes directory if it doesn't exist
         gitignore_path = os.path.join(storage_dir, ".gitignore")
         if not os.path.exists(gitignore_path):
@@ -559,21 +621,21 @@ class NoteAppCLI:
 
         try:
             # Check if there is a remote to push to
-            result = subprocess.run(["git", "remote", "get-url", "origin"], 
-                                  cwd=storage_dir, 
-                                  capture_output=True, 
+            result = subprocess.run(["git", "remote", "get-url", "origin"],
+                                  cwd=storage_dir,
+                                  capture_output=True,
                                   text=True)
             if result.returncode != 0:
                 print(f"No remote repository configured in {storage_dir}")
                 print("Use 'git remote add origin <repository-url>' to add a remote")
                 return
-            
+
             # Perform the git push
-            result = subprocess.run(["git", "push"], 
-                                  cwd=storage_dir, 
-                                  capture_output=True, 
+            result = subprocess.run(["git", "push"],
+                                  cwd=storage_dir,
+                                  capture_output=True,
                                   text=True)
-            
+
             if result.returncode == 0:
                 print("Successfully pushed changes to remote repository")
                 if result.stdout.strip():
