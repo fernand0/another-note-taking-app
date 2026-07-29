@@ -336,6 +336,22 @@ class NoteAppCLI:
         else:
             print(f"Note '{args.title}' not found or failed to delete.")
 
+    def handle_list_urls(self, args):
+        """Handle the list command."""
+        notes = self.note_manager.list_notes()
+        urls = set()
+        if notes:
+            print(f"Found {len(notes)} note(s) in {self.storage_manager.storage_dir}:")
+            for i, title in enumerate(notes, 1):
+                # print(f"{i}. {title}")
+                urls_note = self.handle_get_urls(i)
+                if urls_note:
+                    urls = urls.union(urls_note)
+        else:
+            print(f"No notes found in {self.storage_manager.storage_dir}.")
+        # print(urls)
+
+
     def handle_list_urls_stats(self, args):
         """Handle the list command."""
         notes = self.note_manager.list_notes()
