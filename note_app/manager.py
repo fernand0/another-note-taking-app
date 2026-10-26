@@ -246,15 +246,24 @@ class NoteManager:
         orig_title1 = note1.title
         orig_title2 = note2.title
             
-        # Combine content
+        # Combine content, preserving title information if not already present
         c1 = note1.content.strip()
-        c2 = note2.content.strip()
-        
-        # If title is a URL and content is empty, use title as content
-        if not c1 and note1.title.startswith('http'):
+        if not c1:
+            # Content is empty: use the title so no information is lost
             c1 = note1.title
-        if not c2 and note2.title.startswith('http'):
+        elif note1.title not in c1:
+            # Content exists but does not include the title: prepend it
+            c1 = f"{note1.title}\n{c1}"
+        # else: title is already present in content, use content as-is
+
+        c2 = note2.content.strip()
+        if not c2:
+            # Content is empty: use the title so no information is lost
             c2 = note2.title
+        elif note2.title not in c2:
+            # Content exists but does not include the title: prepend it
+            c2 = f"{note2.title}\n{c2}"
+        # else: title is already present in content, use content as-is
             
         combined_content = f"{c1}\n\n{c2}".strip()
         
